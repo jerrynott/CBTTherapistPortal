@@ -194,10 +194,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\DBTApp\App_Code\Azure.cs">
+    <Content Include="App_Code\Azure.cs">
       <Link>App_Code\Azure.cs</Link>
     </Content>
-    <Content Include="..\DBTApp\App_Code\Extensions.cs">
+    <Content Include="App_Code\Extensions.cs">
       <Link>App_Code\Extensions.cs</Link>
     </Content>
     <Compile Include="ExcelTableEntity.cs" />
