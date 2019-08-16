@@ -1,0 +1,1135 @@
+﻿@using System.Linq;
+@using System.Text.RegularExpressions;
+@using System.Threading.Tasks;
+@using Microsoft.WindowsAzure.Storage;
+@using Microsoft.WindowsAzure.Storage.Auth;
+@using Microsoft.WindowsAzure.Storage.Table;
+
+<title>DBT App Stats</title>
+
+@functions {
+    private static Task<IList<DynamicTableEntity>> logLoader = null;
+    private static IList<DynamicTableEntity> logEntries = new List<DynamicTableEntity>();
+    private static HashSet<string> loadedLogEntries = new HashSet<string>();
+    private static IList<DynamicTableEntity> diaryEntries = new List<DynamicTableEntity>();
+    private static HashSet<string> loadedDiaryEntries = new HashSet<string>();
+    private static IList<DynamicTableEntity> noteEntries = new List<DynamicTableEntity>();
+    private static HashSet<string> loadedNoteEntries = new HashSet<string>();
+    private static IList<DynamicTableEntity> modelEntries = new List<DynamicTableEntity>();
+    private static HashSet<string> loadedModelEntries = new HashSet<string>();
+    private static IList<DynamicTableEntity> calendarEntries = new List<DynamicTableEntity>();
+    private static HashSet<string> loadedCalendarEntries = new HashSet<string>();
+    private static DateTimeOffset lastUpdated = DateTimeOffset.MinValue;
+    private static string[] excludedUsers = new string[]
+    {
+        ".",
+        "localhost", // Local debug account
+        "Anonymous", // Local debug account
+        "1168257465c1ac6e",
+    };
+
+    private static Regex loadedRegex = new Regex(@"Loading Content & Data...", RegexOptions.Compiled);
+    private static Regex clickedRegex = new Regex(@"Clicked: (?'element'.*)", RegexOptions.Compiled);
+    private static Regex navigatedRegex = new Regex(@"(Navigated to module '(?'module'.*)' \('(?'title'.*)'\))|(Showing screen '#(?'screen'.*)'.)", RegexOptions.Compiled);
+    private static Regex elapsedRegex = new Regex(@"Elapsed: (?'name'.*): (?'ms'\d+)ms", RegexOptions.Compiled);
+    private static Regex videoElapsedRegex = new Regex(@"Elapsed: (?'name'.*\.mp4.*): (?'ms'\d+)ms", RegexOptions.Compiled);
+    private static Regex pointsRegex = new Regex(@"Scored points (?'for'.*): (?'points'\d+)", RegexOptions.Compiled);
+    private static Regex viewedDiaryRegex = new Regex(@"Routing to '#DiaryCards/(?'id'.*)'", RegexOptions.Compiled);
+
+    private static Regex interactedAppRegex = new Regex(@"Clicked: .*", RegexOptions.Compiled);
+    private static Regex interactedDiaryRegex = new Regex(@"Clicked: div#mainContent div#DiaryCards\[name=""Diary Cards""\]\.screen div\.diarycards div#(?'id'.*)editor.*", RegexOptions.Compiled);
+    private static Regex interactedModuleRegex = new Regex(@"Clicked: div#mainContent div#Hub\.hub div#blades div#(?'name'.+)\.blade\.scrollabley div\.conversation.*", RegexOptions.Compiled);
+    private static Regex interactedScreenRegex = new Regex(@"Clicked: div#mainContent div#(?'name'.*)\[name=""(?'title'.*)""\]\.screen .*", RegexOptions.Compiled);
+
+    private class Tallies
+    {
+        public uint Loads;
+        public uint Clicks;
+        public uint Navigates;
+        public uint Videos;
+        public TimeSpan VideoTime;
+        public TimeSpan OtherTime;
+        public uint Diaries;
+        public uint PointWins;
+        public uint Points;
+
+        public uint DiaryCreates;
+        public uint DiaryModifies;
+        public uint NoteCreates;
+        public uint NoteModifies;
+        public uint ModelCreates;
+        public uint ModelModifies;
+        public uint CalendarSchedules;
+        public uint CalendarCompletes;
+
+        public readonly List<SessionTracker.Session> Sessions = new List<SessionTracker.Session>();
+    }
+
+    private class SessionTracker
+    {
+        public static readonly TimeSpan MaximumSessionGap = TimeSpan.FromMinutes(4);
+        public static readonly TimeSpan DefaultInteractionDuration = TimeSpan.FromSeconds(5);
+
+        public class Session
+        {
+            public readonly string Name;
+            public readonly DateTimeOffset Start;
+            public readonly DateTimeOffset End;
+            public readonly TimeSpan Duration;
+
+            public Session(string name, DateTimeOffset start, DateTimeOffset end, TimeSpan duration)
+            {
+                this.Name = name;
+                this.Start = start;
+                this.End = end;
+                this.Duration = duration;
+            }
+        }
+
+        private class SessionType
+        {
+            private readonly string Name;
+            private readonly Regex InteractionRegex;
+            private readonly Regex ImmersionRegex;
+
+            private DateTimeOffset? sessionStart; // The start of the current session.
+            private DateTimeOffset? mostRecentInteraction; // The most recent user interaction that we saw.
+            private DateTimeOffset? mostRecentInteractionOrImmersion; // Used to determine whether we're in the same session or starting a new one when calling Check.
+
+            public SessionType(string name, Regex interactionRegex, Regex immersionRegex)
+            {
+                this.Name = name;
+                this.InteractionRegex = interactionRegex;
+                this.ImmersionRegex = immersionRegex;
+            }
+
+            public Session Check(DateTimeOffset time, string entry)
+            {
+                bool isInteraction = false;
+                bool isImmersion = false;
+                TimeSpan duration = DefaultInteractionDuration;
+
+                var interaction = this.InteractionRegex?.Match(entry);
+                if (interaction != null && interaction.Success)
+                {
+                    if (!this.InteractionRegex.GetGroupNames().Contains("name") || interaction.Groups["name"].Value == this.Name)
+                    {
+                        isInteraction = true;
+                        if (this.InteractionRegex.GetGroupNames().Contains("ms") && interaction.Groups["ms"].Success)
+                        {
+                            duration = TimeSpan.FromMilliseconds(Convert.ToDouble(interaction.Groups["ms"].Value));
+                        }
+                    }
+                }
+
+                var immersion = this.ImmersionRegex?.Match(entry);
+                if (immersion != null && immersion.Success)
+                {
+                    if (!this.ImmersionRegex.GetGroupNames().Contains("name") || immersion.Groups["name"].Value == this.Name)
+                    {
+                        isImmersion = true;
+                        if (this.ImmersionRegex.GetGroupNames().Contains("ms") && immersion.Groups["ms"].Success)
+                        {
+                            duration = TimeSpan.FromMilliseconds(Convert.ToDouble(immersion.Groups["ms"].Value));
+                        }
+                    }
+                }
+                return Check(time, duration, isInteraction, isImmersion);
+            }
+
+            public Session Check(DateTimeOffset time, TimeSpan duration, bool isInteraction, bool isImmersion)
+            {
+                Session lastSession = null;
+
+                if (sessionStart == null)
+                {
+                    // First case scenario for when Check is called for the first time.
+                    sessionStart = isInteraction || isImmersion ? time - duration : (DateTimeOffset?)null;
+                }
+                else if (mostRecentInteractionOrImmersion != null && (time - duration) - mostRecentInteractionOrImmersion > MaximumSessionGap)
+                {
+                    // There's been too much time since the beginning of this event (time - duration) from the last event, so start a new session.
+                    if (mostRecentInteraction != null)
+                    {
+                        // Only complete previous session if it actually has an interaction.  Ellapsed non-interactions without any subsequent close interactions don't count.
+                        lastSession = new Session(this.Name, sessionStart.Value, mostRecentInteraction.Value, mostRecentInteraction.Value - sessionStart.Value);
+                    }
+
+                    sessionStart = isInteraction || isImmersion ? time - duration : (DateTimeOffset?)null;
+                    mostRecentInteraction = null;
+                    mostRecentInteractionOrImmersion = null;
+                }
+
+                if (isInteraction)
+                {
+                    mostRecentInteraction = time;
+                }
+
+                if (isInteraction || isImmersion)
+                {
+                    mostRecentInteractionOrImmersion = time;
+                }
+
+                return lastSession;
+            }
+
+            public Session Finish()
+            {
+                var lastSession = sessionStart != null && mostRecentInteraction != null ? new Session(this.Name, sessionStart.Value, mostRecentInteraction.Value, mostRecentInteraction.Value - sessionStart.Value) : null;
+                sessionStart = null;
+                mostRecentInteraction = null;
+                mostRecentInteractionOrImmersion = null;
+                return lastSession;
+            }
+        }
+
+        private readonly Dictionary<string, SessionType> sessionTypes = new Dictionary<string, SessionType>();
+        private readonly List<Tuple<Regex, Regex, Regex>> dynamicSessionTypes = new List<Tuple<Regex, Regex, Regex>>();
+
+        public void Add(string name, Regex interactionRegex, Regex immersionRegex)
+        {
+            sessionTypes[name] = new SessionType(name, interactionRegex, immersionRegex);
+        }
+
+        public void Add(Regex name, Regex interactionRegex, Regex immersionRegex)
+        {
+            dynamicSessionTypes.Add(Tuple.Create(name, interactionRegex, immersionRegex));
+        }
+
+        public IList<Session> Check(DateTimeOffset time, string entry)
+        {
+            foreach (var dst in dynamicSessionTypes)
+            {
+                var match = dst.Item1.Match(entry);
+                if (match.Success && !sessionTypes.ContainsKey(match.Groups["name"].Value))
+                {
+                    sessionTypes[match.Groups["name"].Value] = new SessionType(match.Groups["name"].Value, dst.Item2, dst.Item3);
+                }
+            }
+
+            var finishedSessions = new List<Session>();
+            foreach (var sessionType in sessionTypes.Values)
+            {
+                var session = sessionType.Check(time, entry);
+                if (session != null)
+                {
+                    finishedSessions.Add(session);
+                }
+            }
+            return finishedSessions;
+        }
+
+        public IList<Session> Finish()
+        {
+            var sessions = new List<Session>();
+            foreach (var sessionType in sessionTypes.Values)
+            {
+                var session = sessionType.Finish();
+                if (session != null)
+                {
+                    sessions.Add(session);
+                }
+            }
+            return sessions;
+        }
+    }
+
+    class LoaderStatus
+    {
+        public string Name;
+        public Task Task;
+        public DateTimeOffset Started;
+        public DateTimeOffset LastUpdate;
+        public int Responses;
+        public int Results;
+        public int NewResults;
+        public DateTimeOffset Finished;
+    }
+
+    private static readonly List<LoaderStatus> loaders = new List<LoaderStatus>();
+
+    private static bool LoadLogEntriesAsync()
+    {
+        lock (loaders)
+        {
+            if (!loaders.Any(l => l.Task.Status == TaskStatus.Running || l.Task.Status == TaskStatus.WaitingToRun || l.Task.Status == TaskStatus.WaitingForActivation))
+            {
+                var query = "Timestamp ge datetime'2017-07-14T00:00:00.000Z'";
+                if (excludedUsers.Length > 0)
+                {
+                    query += " and " + String.Join(" and ", from excluded in excludedUsers select "PartitionKey ne '" + excluded + "'");
+                }
+
+                var load = new Action<string, string, HashSet<string>, IList<DynamicTableEntity>>((name, table, keys, entries) =>
+                {
+                    var status = new LoaderStatus();
+                    status.Name = name;
+                    status.Started = DateTimeOffset.Now;
+                    status.Task = Azure.QueryAsync(table, query,
+                        (progress) =>
+                        {
+                            status.Responses++;
+                            status.Results += progress.Count;
+                            lock (entries)
+                            {
+                                foreach (var entry in progress)
+                                {
+                                    if (!keys.Contains(entry.PartitionKey + entry.RowKey))
+                                    {
+                                        entries.Add(entry);
+                                        keys.Add(entry.PartitionKey + entry.RowKey);
+                                        status.NewResults++;
+                                    }
+                                }
+                            }
+                            status.LastUpdate = DateTimeOffset.Now;
+                            lastUpdated = DateTimeOffset.Now;
+                        },
+                        (results, cancelled) =>
+                        {
+                            status.Finished = DateTimeOffset.Now;
+                        });
+                    loaders.Add(status);
+                });
+
+                load("Log Loader", "logs", loadedLogEntries, logEntries);
+                load("Diary Card Loader", "diarycards", loadedDiaryEntries, diaryEntries);
+                load("Note Loader", "notes", loadedNoteEntries, noteEntries);
+                load("Model of Emotions Loader", "modelsofemotions", loadedModelEntries, modelEntries);
+                load("Calendar Loader", "calendar", loadedCalendarEntries, calendarEntries);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public static DateTimeOffset? GetDateProperty(DynamicTableEntity entity, string propertyName)
+    {
+        if (entity.Properties.ContainsKey(propertyName))
+        {
+            if (entity.Properties[propertyName].PropertyType == EdmType.DateTime)
+            {
+                return entity.Properties[propertyName].DateTimeOffsetValue;
+            }
+            else
+            {
+                var value = entity.Properties[propertyName].StringValue;
+                DateTimeOffset dto;
+                if (DateTimeOffset.TryParse(value, out dto))
+                {
+                    return dto;
+                }
+                if (value.IndexOf(" (") > 0)
+                {
+                    value = value.Substring(0, value.IndexOf(" ("));
+                }
+                value = value.Replace("\u200E", "")
+                    .Replace("PDT", "-0700").Replace("PST", "-0800")
+                    .Replace("MDT", "-0600").Replace("MST", "-0700")
+                    .Replace("CDT", "-0500").Replace("CST", "-0600")
+                    .Replace("EDT", "-0400").Replace("EST", "-0500");
+                if (DateTimeOffset.TryParseExact(value, new[] { "ddd MMM d yyyy HH:mm:ss 'GMT'zzz", "MMMM d, yyyy h:m:s tt zzz", "M/d/yyyy h:m tt", "M/d/yyyy H:m", "d/M/yyyy H:m" }, System.Globalization.DateTimeFormatInfo.InvariantInfo, System.Globalization.DateTimeStyles.None, out dto))
+                {
+                    return dto;
+                }
+            }
+        }
+        return null;
+    }
+}
+
+<script>
+    function toggleIgnore(id) {
+        id = String(id);
+        var params = location.params();
+        var ignoring = (params.ignore || '').split(',');
+        if (ignoring == "") ignoring = [];
+        var existing = ignoring.indexOf(id);
+        if (existing >= 0) ignoring.splice(existing, 1);
+        else ignoring.push(id);
+        params.ignore = ignoring.join();
+        location.params(params);
+    }
+
+    location.params = function (params) {
+        var obj = {}, i, parts, len, key, value;
+
+        if (typeof params === 'string') {
+            value = location.search.match(new RegExp('[?&]' + params + '=?([^&]*)[&#$]?'));
+            return value ? value[1] : undefined;
+        }
+
+        var _params = location.search.substr(1).split('&');
+
+        for (i = 0, len = _params.length; i < len; i++) {
+            var split = _params[i].split(/=(.*)/);
+            if (!split[0]) { continue; }
+            obj[split[0]] = split.length > 0 ? split[1] : true;
+        }
+
+        if (typeof params !== 'object') { return obj; }
+
+        for (key in params) {
+            value = params[key];
+            if (typeof value === 'undefined' || value === false) {
+                delete obj[key];
+            } else {
+                obj[key] = value;
+            }
+        }
+
+        parts = [];
+        for (key in obj) {
+            parts.push(key + (obj[key] === true ? '' : '=' + obj[key]));
+        }
+
+        location.search = parts.join('&');
+    };
+</script>
+
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    table {
+        table-layout: fixed;
+        border-collapse: collapse;
+        width: 100%;
+        text-align: left;
+        border: 2px solid gray;
+        background: ghostwhite;
+    }
+
+        table ~ table {
+            margin-top: 20px;
+        }
+
+    thead {
+        background: lavender;
+    }
+
+    tbody {
+        border: 2px solid gray;
+    }
+
+    tr {
+        border: 1px solid silver;
+    }
+
+        tr:nth-child(even) {
+            background: whitesmoke;
+        }
+
+    td {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    tr.subTable:nth-child(odd) {
+        background: lightgray;
+    }
+
+    tr.subTable:nth-child(even) {
+        background: darkgray;
+    }
+
+    tr.subTable > td {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+        tr.subTable > td > table {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+    th.buttons {
+        display: flex;
+    }
+
+        th.buttons > button {
+            flex: 1;
+        }
+
+    table.ignore {
+        opacity: .2;
+    }
+
+    tr.loads,
+    button#showLoads {
+        background: lightskyblue;
+    }
+
+    tr.clicks,
+    button#showClicks {
+        background: beige;
+    }
+
+    tr.navigates,
+    button#showNavigates {
+        background: lightblue;
+    }
+
+    tr.videos,
+    button#showVideos {
+        background: lightpink;
+    }
+
+    tr.others,
+    button#showOthers {
+        background: orange;
+    }
+
+    tr.points,
+    button#showPoints {
+        background: gold;
+    }
+
+    tr.diaries,
+    button#showDiaries {
+        background: lightgreen;
+    }
+
+    table.daily {
+        display: none;
+    }
+
+    table.showDaily table.daily {
+        display: table;
+    }
+
+    tr.loads,
+    tr.clicks,
+    tr.navigates,
+    tr.videos,
+    tr.others,
+    tr.points,
+    tr.diaries,
+    tr.entryHeader {
+        line-height: 0px;
+        color: transparent;
+    }
+
+    table.showLoads tr.loads,
+    table.showLoads tr.entryHeader,
+    table.showClicks tr.clicks,
+    table.showClicks tr.entryHeader,
+    table.showNavigates tr.navigates,
+    table.showNavigates tr.entryHeader,
+    table.showVideos tr.videos,
+    table.showVideos tr.entryHeader,
+    table.showOthers tr.others,
+    table.showOthers tr.entryHeader,
+    table.showPoints tr.points,
+    table.showPoints tr.entryHeader,
+    table.showDiaries tr.diaries,
+    table.showDiaries tr.entryHeader {
+        line-height: normal;
+        color: initial;
+    }
+
+    table.ignore button#ignore,
+    table.showDaily button#showDaily,
+    table.showLoads button#showLoads,
+    table.showClicks button#showClicks,
+    table.showNavigates button#showNavigates,
+    table.showVideos button#showVideos,
+    table.showOthers button#showOthers,
+    table.showPoints button#showPoints,
+    table.showDiaries button#showDiaries {
+        border-style: inset;
+    }
+
+    tr.sessionFooter {
+        background: whitesmoke;
+        border-bottom: 1px solid black;
+        text-align: right;
+    }
+
+    tr.entry:not(.interaction) {
+        font-style: italic;
+    }
+
+    table.loaderHistory {
+        font-size: small;
+        opacity: .5;
+    }
+
+    table.summary thead,
+    table.summary td {
+        text-align: right;
+    }
+</style>
+
+
+@lock (logEntries)
+{
+    LoadLogEntriesAsync();
+
+    <h4>Showing analysis of @logEntries.Count log entries loaded as of @((DateTimeOffset.Now - lastUpdated).ToLowerFriendlyString(2)) ago.  Refresh to update.</h4>
+
+    var only = (Request.QueryString["only"] ?? "").Split(',');
+    var ignore = (Request.QueryString["ignore"] ?? "").Split(',');
+    var format = Request.QueryString["format"] ?? "N";
+
+    var entries = from entry in logEntries
+                  where only[0].Length == 0 || only.Contains(entry.PartitionKey)
+                  let timestamp = Convert.ToUInt64(entry.Properties["ClientTimestamp"].PropertyAsObject)
+                  let local = entry.Properties["ClientTime"].StringValue
+                  let dto = GetDateProperty(entry, "ClientTime")
+                  where dto.HasValue
+                  orderby timestamp
+                  select new
+                  {
+                      user = entry.PartitionKey,
+                      timestamp = timestamp,
+                      local = local,
+                      dto = dto.Value,
+                      message = entry.Properties["Message"].StringValue
+                  };
+
+    var byPerson = from entry in entries
+                   group entry by entry.user into person
+                   select new
+                   {
+                       id = person.Key,
+                       days = from entry in person
+                              group entry by entry.dto.Date
+                   };
+
+    var allTallies = new List<Tallies>();
+    var dailyTallies = new Dictionary<DateTime, List<Tallies>>();
+    var personalTallies = new Dictionary<string, List<Tallies>>();
+    var personalDailyTallies = new Dictionary<string, Dictionary<DateTime, Tallies>>();
+
+    foreach (var person in byPerson)
+    {
+        if (!ignore.Contains(person.id))
+        {
+            personalTallies.Add(person.id, new List<Tallies>());
+            personalDailyTallies.Add(person.id, new Dictionary<DateTime, Tallies>());
+        }
+
+        var sessions = new SessionTracker();
+        sessions.Add("App", interactedAppRegex, elapsedRegex);
+        //sessions.Add("DiaryCard", interactedDiaryRegex, null);
+        sessions.Add(interactedModuleRegex, interactedModuleRegex, elapsedRegex);
+        sessions.Add(interactedScreenRegex, interactedScreenRegex, elapsedRegex);
+
+        <table class="@(ignore.Contains(person.id) ? "ignore" : "")">
+            <thead>
+                <tr>
+                    <th>User ID @person.id</th>
+                    <th class="buttons">
+                        <button id="showDaily" onclick="this.parentElement.parentElement.parentElement.parentElement.classList.toggle('showDaily')">Show/Hide Daily Details</button>
+                        <button id="ignore" onclick="toggleIgnore('@person.id')">Ignore/Include User in Totals</button>
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var day in person.days)
+                {
+                    if (!ignore.Contains(person.id))
+                    {
+                        // Make sure that there's a global tally for each day we encountered.
+                        if (!dailyTallies.ContainsKey(day.Key))
+                        {
+                            dailyTallies.Add(day.Key, new List<Tallies>());
+                        }
+                    }
+
+                    // This will contain the tallies for this day for this person.
+                    var tallies = new Tallies();
+
+                    <tr class="subTable">
+                        <td colspan="2">
+                            <table class="daily">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20em">@day.Key.ToLongDateString()</th>
+                                        <th class="buttons">
+                                            <button id="showLoads" onclick="this.parentElement.parentElement.parentElement.parentElement.classList.toggle('showLoads')">Show/Hide App Loads</button>
+                                            <button id="showClicks" onclick="this.parentElement.parentElement.parentElement.parentElement.classList.toggle('showClicks')">Show/Hide Clicks/Taps</button>
+                                            <button id="showNavigates" onclick="this.parentElement.parentElement.parentElement.parentElement.classList.toggle('showNavigates')">Show/Hide Navigations</button>
+                                            <button id="showVideos" onclick="this.parentElement.parentElement.parentElement.parentElement.classList.toggle('showVideos')">Show/Hide Videos</button>
+                                            <button id="showOthers" onclick="this.parentElement.parentElement.parentElement.parentElement.classList.toggle('showOthers')">Show/Hide Activities</button>
+                                            <button id="showPoints" onclick="this.parentElement.parentElement.parentElement.parentElement.classList.toggle('showPoints')">Show/Hide Points</button>
+                                            <button id="showDiaries" onclick="this.parentElement.parentElement.parentElement.parentElement.classList.toggle('showDiaries')">Show/Hide Diary Card</button>
+                                        </th>
+                                    </tr>
+                                    <tr class="entryHeader">
+                                        <th>Client Time</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var entry in day)
+                                    {
+                                        // First keep track of our interaction/usage time.
+                                        foreach (var sessionComplete in sessions.Check(entry.dto, entry.message).OrderByDescending(s => s.Name))
+                                        {
+                                            <tr class="sessionFooter">
+                                                <td>@sessionComplete.Name Session Duration</td>
+                                                <td>@sessionComplete.Duration.ToFriendlyString() (@sessionComplete.Start.ToString("HH:mm:ss") to @sessionComplete.End.ToString("HH:mm:ss"))</td>
+                                            </tr>
+                                            tallies.Sessions.Add(sessionComplete);
+                                        }
+
+                                        // Now show/tally this event.
+                                        var type = "";
+
+                                        var elapsedMatch = elapsedRegex.Match(entry.message);
+                                        var duration = elapsedMatch.Success ? TimeSpan.FromMilliseconds(double.Parse(elapsedMatch.Groups["ms"].Value)) : SessionTracker.DefaultInteractionDuration;
+
+                                        var loadedMatch = loadedRegex.Match(entry.message);
+                                        if (loadedMatch.Success)
+                                        {
+                                            tallies.Loads++;
+                                            type = "loads";
+                                        }
+                                        var clickedMatch = clickedRegex.Match(entry.message);
+                                        if (clickedMatch.Success)
+                                        {
+                                            tallies.Clicks++;
+                                            type = "clicks";
+                                        }
+                                        var navigatedMatch = navigatedRegex.Match(entry.message);
+                                        if (navigatedMatch.Success)
+                                        {
+                                            tallies.Navigates++;
+                                            type = "navigates";
+                                        }
+                                        var videoElapsedMatch = videoElapsedRegex.Match(entry.message);
+                                        if (videoElapsedMatch.Success)
+                                        {
+                                            tallies.Videos++;
+                                            tallies.VideoTime += TimeSpan.FromMilliseconds(double.Parse(videoElapsedMatch.Groups["ms"].Value));
+                                            type = "videos";
+                                        }
+                                        else if (elapsedMatch.Success)
+                                        {
+                                            tallies.OtherTime += TimeSpan.FromMilliseconds(double.Parse(elapsedMatch.Groups["ms"].Value));
+                                            type = "others";
+                                        }
+                                        var diariesMatch = viewedDiaryRegex.Match(entry.message);
+                                        if (diariesMatch.Success)
+                                        {
+                                            tallies.Diaries++;
+                                            type = "diaries";
+                                        }
+                                        var pointsMatch = pointsRegex.Match(entry.message);
+                                        if (pointsMatch.Success)
+                                        {
+                                            tallies.PointWins++;
+                                            tallies.Points += Convert.ToUInt32(pointsMatch.Groups["points"].Value);
+                                            type = "points";
+                                        }
+
+                                        var interactedDiaryMatch = interactedDiaryRegex.Match(entry.message);
+                                        if (interactedDiaryMatch.Success)
+                                        {
+                                            type += " diaries";
+                                        }
+                                        var interactedModuleMatch = interactedModuleRegex.Match(entry.message);
+                                        if (interactedModuleMatch.Success)
+                                        {
+                                            type += " modules";
+                                        }
+                                        var interactedAppMatch = interactedAppRegex.Match(entry.message);
+                                        if (interactedAppMatch.Success || interactedDiaryMatch.Success || interactedModuleMatch.Success)
+                                        {
+                                            type += " interaction";
+                                        }
+
+                                        if (type != "")
+                                        {
+                                            <tr class="@type entry"><td>@entry.local</td><td>@entry.message@(elapsedMatch.Success ? (" (" + duration.ToLowerFriendlyString() + ")") : "")</td></tr>
+                                        }
+                                    }
+
+                                    @foreach (var sessionComplete in sessions.Finish().OrderByDescending(s => s.Name))
+                                    {
+                                        <tr class="sessionFooter">
+                                            <td>@sessionComplete.Name Session Duration</td>
+                                            <td>@sessionComplete.Duration.ToFriendlyString() (@sessionComplete.Start.ToString("HH:mm:ss") to @sessionComplete.End.ToString("HH:mm:ss"))</td>
+                                        </tr>
+                                        tallies.Sessions.Add(sessionComplete);
+                                    }
+
+                                    @lock (diaryEntries)
+                                    {
+                                        tallies.DiaryCreates += (uint)diaryEntries.Where(e => e.PartitionKey == person.id && GetDateProperty(e, "Created")?.Date == day.Key).Select(e => e.Properties["ID"].DoubleValue).Distinct().Count();
+                                        tallies.DiaryModifies = (uint)diaryEntries.Where(e => e.PartitionKey == person.id && GetDateProperty(e, "Modified")?.Date == day.Key).Select(e => e.Properties["ID"].DoubleValue).Distinct().Count();
+                                    }
+                                    @lock (noteEntries)
+                                    {
+                                        tallies.NoteCreates = (uint)noteEntries.Where(e => e.PartitionKey == person.id && GetDateProperty(e, "Created")?.Date == day.Key).Select(e => e.Properties["ID"].DoubleValue).Distinct().Count();
+                                        tallies.NoteModifies = (uint)noteEntries.Where(e => e.PartitionKey == person.id && GetDateProperty(e, "Modified")?.Date == day.Key).Select(e => e.Properties["ID"].DoubleValue).Distinct().Count();
+                                    }
+                                    @lock (modelEntries)
+                                    {
+                                        tallies.ModelCreates = (uint)modelEntries.Where(e => e.PartitionKey == person.id && GetDateProperty(e, "Created")?.Date == day.Key).Select(e => e.Properties["ID"].DoubleValue).Distinct().Count();
+                                        tallies.ModelModifies = (uint)modelEntries.Where(e => e.PartitionKey == person.id && GetDateProperty(e, "Modified")?.Date == day.Key).Select(e => e.Properties["ID"].DoubleValue).Distinct().Count();
+                                    }
+                                    @lock (calendarEntries)
+                                    {
+                                        tallies.CalendarSchedules = (uint)calendarEntries.Where(e => e.PartitionKey == person.id && !e.Properties.ContainsKey("Done") && GetDateProperty(e, "Date")?.Date == day.Key).Count();
+                                        tallies.CalendarCompletes = (uint)calendarEntries.Where(e => e.PartitionKey == person.id && e.Properties.ContainsKey("Done") && GetDateProperty(e, "Done")?.Date == day.Key).Count();
+                                    }
+                                </tbody>
+
+                                <tfoot>
+                                    @foreach (var name in tallies.Sessions.Select(s => s.Name).Distinct().OrderBy(n => n == "App" ? "0" : n))
+                                    {
+                                        <tr>
+                                            <th>Daily @name Sessions</th>
+                                            <td>@tallies.Sessions.Count(s => s.Name == name)</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Daily @name Time</th>
+                                            <td>@tallies.Sessions.Sum(s => s.Name == name ? s.Duration : TimeSpan.Zero).ToFriendlyString()</td>
+                                        </tr>
+                                    }
+                                    <tr>
+                                        <th>Daily Clicks/Taps</th>
+                                        <td>@tallies.Clicks</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Navigations</th>
+                                        <td>@tallies.Navigates</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Videos</th>
+                                        <td>@tallies.Videos</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Time Watching Videos</th>
+                                        <td>@tallies.VideoTime.ToFriendlyString()</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Time Immersed in Other Activities</th>
+                                        <td>@tallies.OtherTime.ToFriendlyString()</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Point Wins</th>
+                                        <td>@tallies.PointWins</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Points Earned</th>
+                                        <td>@tallies.Points</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Diary Cards Created</th>
+                                        <td>@tallies.DiaryCreates</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Diary Cards Modified</th>
+                                        <td>@tallies.DiaryModifies</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Notes Created</th>
+                                        <td>@tallies.NoteCreates</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Notes Modified</th>
+                                        <td>@tallies.NoteModifies</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Models of Emotions Created</th>
+                                        <td>@tallies.ModelCreates</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Models of Emotions Modified</th>
+                                        <td>@tallies.ModelModifies</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Calendar Items Scheduled for Today</th>
+                                        <td>@tallies.CalendarSchedules</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Calendar Items Completed Today</th>
+                                        <td>@tallies.CalendarCompletes</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </td>
+                    </tr>
+
+                    if (!ignore.Contains(person.id))
+                    {
+                        // Add these tallies to the total.
+                        allTallies.Add(tallies);
+
+                        // Add these tallies to the total counts for this day (regarless of person).
+                        dailyTallies[day.Key].Add(tallies);
+
+                        // Add these tallies to the total personal counts (over all days) for this person.
+                        personalTallies[person.id].Add(tallies);
+
+                        // Add these tallies to the personal daily tallies for this person.
+                        personalDailyTallies[person.id].Add(day.Key, tallies);
+                    }
+                }
+
+            </tbody>
+
+            @if (!ignore.Contains(person.id))
+            {
+                <tfoot>
+                    <tr>
+                        <th>Total Days Used App</th>
+                        <td>@personalDailyTallies[person.id].Count()</td>
+                    </tr>
+                    @foreach (var name in @personalTallies[person.id].SelectMany(t => t.Sessions).Select(s => s.Name).Distinct().OrderBy(n => n == "App" ? "0" : n))
+                    {
+                        <tr>
+                            <th>Total @name Sessions</th>
+                            <td>@personalTallies[person.id].Sum(t => t.Sessions.Count(s => s.Name == name))</td>
+                        </tr>
+                        <tr>
+                            <th>Total @name Time</th>
+                            <td>@personalTallies[person.id].Sum(t => t.Sessions.Sum(s => s.Name == name ? s.Duration : TimeSpan.Zero)).ToFriendlyString()</td>
+                        </tr>
+                    }
+                    <tr>
+                        <th>Total Clicks/Taps</th>
+                        <td>@personalTallies[person.id].Sum(t => t.Clicks)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Navigations</th>
+                        <td>@personalTallies[person.id].Sum(t => t.Navigates)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Videos</th>
+                        <td>@personalTallies[person.id].Sum(t => t.Videos)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Time Watching Videos</th>
+                        <td>@personalTallies[person.id].Sum(t => t.VideoTime).ToFriendlyString()</td>
+                    </tr>
+                    <tr>
+                        <th>Total Time Immersed in Other Activities</th>
+                        <td>@personalTallies[person.id].Sum(t => t.OtherTime).ToFriendlyString()</td>
+                    </tr>
+                    <tr>
+                        <th>Total Times Points Awarded</th>
+                        <td>@personalTallies[person.id].Sum(t => t.PointWins)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Points Earned</th>
+                        <td>@personalTallies[person.id].Sum(t => t.Points)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Diary Cards</th>
+                        <td>@personalTallies[person.id].Sum(t => t.DiaryCreates)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Notes</th>
+                        <td>@personalTallies[person.id].Sum(t => t.NoteCreates)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Models of Emotions</th>
+                        <td>@personalTallies[person.id].Sum(t => t.ModelCreates)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Calendar Items Scheduled</th>
+                        <td>@personalTallies[person.id].Sum(t => t.CalendarSchedules)</td>
+                    </tr>
+                    <tr>
+                        <th>Total Calendar Items Completed</th>
+                        <td>@personalTallies[person.id].Sum(t => t.CalendarCompletes)</td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    }
+
+    <table class="summary">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Total</th>
+                <th>Average per Person</th>
+                <th>Average per Calendar Day</th>
+                <th>Average per Person per Day</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>People</th>
+                <td>@personalTallies.Count</td>
+                <td></td>
+                <td>@dailyTallies.Average(d => d.Value.Count).ToString(format)</td>
+                <td></td>
+            </tr>
+            <tr>
+                <th>Days Used App</th>
+                <td>@personalDailyTallies.Sum(p => p.Value.Count) (@dailyTallies.Count Calendar Days)</td>
+                <td>@personalDailyTallies.Average(p => p.Value.Count).ToString(format)</td>
+                <td></td>
+                <td></td>
+            </tr>
+            @foreach (var name in @allTallies.SelectMany(t => t.Sessions).Select(s => s.Name).Distinct().OrderBy(n => n == "App" ? "0" : n))
+            {
+                <tr>
+                    <th>@name Sessions</th>
+                    <td>@allTallies.Sum(t => t.Sessions.Count(s => s.Name == name))</td>
+                    <td>@personalTallies.Average(p => p.Value.Sum(t => t.Sessions.Count(s => s.Name == name))).ToString(format)</td>
+                    <td>@dailyTallies.Average(d => d.Value.Sum(t => t.Sessions.Count(s => s.Name == name))).ToString(format)</td>
+                    <td>@allTallies.Average(t => (long)t.Sessions.Count(s => s.Name == name)).ToString(format)</td>
+                </tr>
+                <tr>
+                    <th>@name Time</th>
+                    <td>@allTallies.Sum(t => t.Sessions.Sum(s => s.Name == name ? s.Duration : TimeSpan.Zero)).ToFriendlyString()</td>
+                    <td>@personalTallies.Average(p => p.Value.Sum(t => t.Sessions.Sum(s => s.Name == name ? s.Duration : TimeSpan.Zero))).ToFriendlyString()</td>
+                    <td>@dailyTallies.Average(d => d.Value.Sum(t => t.Sessions.Sum(s => s.Name == name ? s.Duration : TimeSpan.Zero))).ToFriendlyString()</td>
+                    <td>@allTallies.Average(t => t.Sessions.Sum(s => s.Name == name ? s.Duration : TimeSpan.Zero)).ToFriendlyString()</td>
+                </tr>
+            }
+            <tr>
+                <th>Clicks/Taps</th>
+                <td>@allTallies.Sum(t => t.Clicks)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.Clicks)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.Clicks)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.Clicks).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Navigations</th>
+                <td>@allTallies.Sum(t => t.Navigates)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.Navigates)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.Navigates)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.Navigates).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Videos Watched</th>
+                <td>@allTallies.Sum(t => t.Videos)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.Videos)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.Videos)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.Videos).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Videos Time</th>
+                <td>@allTallies.Sum(t => t.VideoTime).ToFriendlyString()</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.VideoTime)).ToFriendlyString()</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.VideoTime)).ToFriendlyString()</td>
+                <td>@allTallies.Average(t => t.VideoTime).ToFriendlyString()</td>
+            </tr>
+            <tr>
+                <th>Other Immersions Time</th>
+                <td>@allTallies.Sum(t => t.OtherTime).ToFriendlyString()</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.OtherTime)).ToFriendlyString()</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.OtherTime)).ToFriendlyString()</td>
+                <td>@allTallies.Average(t => t.OtherTime).ToFriendlyString()</td>
+            </tr>
+            <tr>
+                <th># Times Awarded Points</th>
+                <td>@allTallies.Sum(t => t.PointWins)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.PointWins)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.PointWins)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.PointWins).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Total Points Accumulated</th>
+                <td>@allTallies.Sum(t => t.Points)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.Points)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.Points)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.Points).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Total Diary Cards</th>
+                <td>@allTallies.Sum(t => t.DiaryCreates)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.DiaryCreates)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.DiaryCreates)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.DiaryCreates).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Total Notes</th>
+                <td>@allTallies.Sum(t => t.NoteCreates)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.NoteCreates)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.NoteCreates)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.NoteCreates).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Total Models of Emotions</th>
+                <td>@allTallies.Sum(t => t.ModelCreates)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.ModelCreates)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.ModelCreates)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.ModelCreates).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Total Calendar Items Scheduled</th>
+                <td>@allTallies.Sum(t => t.CalendarSchedules)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.CalendarSchedules)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.CalendarSchedules)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.CalendarSchedules).ToString(format)</td>
+            </tr>
+            <tr>
+                <th>Total Calendar Items Completed</th>
+                <td>@allTallies.Sum(t => t.CalendarCompletes)</td>
+                <td>@personalTallies.Average(p => p.Value.Sum(t => t.CalendarCompletes)).ToString(format)</td>
+                <td>@dailyTallies.Average(d => d.Value.Sum(t => t.CalendarCompletes)).ToString(format)</td>
+                <td>@allTallies.Average(t => t.CalendarCompletes).ToString(format)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script type="text/javascript">
+        var data = "data:text/csv;charset=utf-8,\
+UserID,SessionName,SessionStart,SessionEnd,SessionSeconds\n\
+        @foreach (var person in personalTallies)
+        {
+            foreach (var tally in person.Value)
+            {
+                foreach (var session in tally.Sessions)
+                {
+@:@person.Key,@session.Name,@session.Start.ToString("yyyy-MM-dd HH:mm:ss"),@session.End.ToString("yyyy-MM-dd HH:mm:ss"),@session.Duration.TotalSeconds\n\
+                }
+        }
+    }
+";
+        var encodedUri = encodeURI(data);
+        var link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "SessionsAsOf" + new Date("@lastUpdated.ToString("o")").toISOString().replace(/:|\./g,'-')  + ".csv");
+        link.innerText = "Download Sessions as CSV";
+        document.body.appendChild(link);
+    </script>
+}
+
+@lock (loaders)
+{
+    <table class="loaderHistory">
+        <thead>
+            <tr>
+                <th>Loader</th>
+                <th>Started</th>
+                <th>Status</th>
+                <th>Responses</th>
+                <th>Results</th>
+                <th>New Entries</th>
+                <th>Last Update</th>
+                <th>Finished</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var loader in loaders)
+            {
+                <tr>
+                    <td>@loader.Name</td>
+                    <td>@((DateTimeOffset.Now - loader.Started).ToLowerFriendlyString()) ago</td>
+                    <td>@loader.Task.Status</td>
+                    <td>@loader.Responses</td>
+                    <td>@loader.Results</td>
+                    <td>@loader.NewResults</td>
+                    <td>@((DateTimeOffset.Now - loader.LastUpdate).ToLowerFriendlyString()) ago</td>
+                    <td>@((DateTimeOffset.Now - loader.Finished).ToLowerFriendlyString()) ago</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
