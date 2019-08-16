@@ -1,5 +1,4 @@
 ﻿using Microsoft.Azure.KeyVault;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
@@ -25,23 +24,6 @@ public static class Azure
     static Azure()
     {
         StorageConnectionString = Environment.GetEnvironmentVariable("StorageAccount");
-        if (StorageConnectionString != null && StorageConnectionString.StartsWith("http")) // Can set this to an Azure KeyVault URL to get the connection string from Azure Key Vault.
-        {
-            var kv = new KeyVaultClient(async (string authority, string resource, string scope) =>
-            {
-                var authContext = new AuthenticationContext(authority);
-                ClientCredential clientCred = new ClientCredential(
-                            WebConfigurationManager.ConnectionStrings["ClientId"].ConnectionString,
-                            WebConfigurationManager.ConnectionStrings["ClientSecret"].ConnectionString);
-                AuthenticationResult result = await authContext.AcquireTokenAsync(resource, clientCred);
-
-                if (result == null)
-                    throw new InvalidOperationException("Failed to obtain the App Authentication JWT token");
-
-                return result.AccessToken;
-            });
-            StorageConnectionString = kv.GetSecretAsync(StorageConnectionString).Result.Value;
-        }
 
         if (String.IsNullOrWhiteSpace(StorageConnectionString))
         {
