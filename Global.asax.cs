@@ -18,6 +18,12 @@ namespace TherapistPortal
 
         public static string GetIDFromWindowsLive(HttpRequest request)
         {
+            var fromAzure = request.Headers["X-MS-CLIENT-PRINCIPAL-ID"];
+            if (!String.IsNullOrWhiteSpace(fromAzure))
+            {
+                return fromAzure;
+            }
+
             var wl_auth = request.Cookies["wl_auth"];
             if (wl_auth == null)
             {
