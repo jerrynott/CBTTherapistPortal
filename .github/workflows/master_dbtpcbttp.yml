@@ -31,5 +31,5 @@ jobs:
       with:
         app-name: 'dbtpcbttp'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_e63b411db7c4457c97524de96a7abb1c }}
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_45a1b84bd86f43a2b3993f6ddcc79181 }}
         package: ${{env.DOTNET_ROOT}}/myapp 
