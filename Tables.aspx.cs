@@ -1,4 +1,3 @@
-﻿
 /****************************** Module Header ******************************\
 *Module Name:  Tables.aspx.cs
 *Project:      TherapistPortal
