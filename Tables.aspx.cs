@@ -56,12 +56,20 @@ namespace TherapistPortal
             try
             {   
                 jnn = 1;
-                Response.Write("jerrylogging");
+                Response.Write("jerrylogging <br/>");
         
             string userID = null;
             if (!Request.IsLocal)
             {
+            
+            Response.Write("<br/>jerry 01: " + Request.IsLocal.ToString());
+            
                 userID = Global.GetIDFromWindowsLive(Request);
+                
+             Response.Write("<br/>jerry 02: " + userID.ToString());
+             
+             Response.Write("<br/>jerry 03: " + Environment.GetEnvironmentVariable("TherapistPortalUserIDs").ToString());
+             
                 if (!Environment.GetEnvironmentVariable("TherapistPortalUserIDs").Contains(userID))
                 {
                     throw new UnauthorizedAccessException("Your User ID (" + userID + ") is not in TherapistPortalUserIDs and therefore cannot access this page.");
