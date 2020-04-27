@@ -50,6 +50,14 @@ namespace TherapistPortal
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            string jerry = "1";
+            int jnn = 0;
+            
+            try
+            {   
+                jnn = 1;
+                Response.Write("jerrylogging");
+        
             string userID = null;
             if (!Request.IsLocal)
             {
@@ -59,6 +67,8 @@ namespace TherapistPortal
                     throw new UnauthorizedAccessException("Your User ID (" + userID + ") is not in TherapistPortalUserIDs and therefore cannot access this page.");
                 }
             }
+            
+            jnn = 2;
 
             if (lbl_Example.Text == "Timestamp ge datetime'2017-05-31T23:59:59Z'")
             {
@@ -70,6 +80,8 @@ namespace TherapistPortal
                     lbl_Example.Text += " and PartitionKey eq '" + userID + "'";
                 }
             }
+            
+            jnn = 3;
 
             storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
             if (!IsPostBack)
@@ -84,10 +96,21 @@ namespace TherapistPortal
                     Response.Write(strError);
                 }
             }
+            
+            jnn = 4;
 
             if (chk_ShowDetails.Checked)
             {
                 ShowTableContent();
+            }
+            
+            
+            
+            }
+            catch (Exception ex)
+            {
+                    string strError = "Jerry Error" + jnn.ToString() + "</pre></blockquote>";
+                    Response.Write(strError);
             }
         }
 
