@@ -50,35 +50,18 @@ namespace TherapistPortal
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            string jerry = "1";
-            int jnn = 0;
-            
-            try
-            {   
-                jnn = 1;
-                Response.Write("jerrylogging <br/>");
+            string jerry = "<h1>Loading it Jerry !!! </h1>");
+            Response.Write(strError);
         
             string userID = null;
             if (!Request.IsLocal)
             {
-            
-            Response.Write("<br/>jerry 01: " + Request.IsLocal.ToString());
-            
                 userID = Global.GetIDFromWindowsLive(Request);
-                
-             Response.Write("<br/>jerry 02a: " + StorageConnectionString.ToString());
-             
-             Response.Write("<br/>jerry 02b: " + Environment.GetEnvironmentVariable("StorageAccount").ToString());
-             
-             Response.Write("<br/>jerry 03: " + Environment.GetEnvironmentVariable("TherapistPortalUserIDs").ToString());
-             
                 if (!Environment.GetEnvironmentVariable("TherapistPortalUserIDs").Contains(userID))
                 {
                     throw new UnauthorizedAccessException("Your User ID (" + userID + ") is not in TherapistPortalUserIDs and therefore cannot access this page.");
                 }
             }
-            
-            jnn = 2;
 
             if (lbl_Example.Text == "Timestamp ge datetime'2017-05-31T23:59:59Z'")
             {
@@ -90,8 +73,6 @@ namespace TherapistPortal
                     lbl_Example.Text += " and PartitionKey eq '" + userID + "'";
                 }
             }
-            
-            jnn = 3;
 
             storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
             if (!IsPostBack)
@@ -106,21 +87,10 @@ namespace TherapistPortal
                     Response.Write(strError);
                 }
             }
-            
-            jnn = 4;
 
             if (chk_ShowDetails.Checked)
             {
                 ShowTableContent();
-            }
-            
-            
-            
-            }
-            catch (Exception ex)
-            {
-                    string strError = "<br/>FFS Jerry --- <blockquote><pre>" + HttpUtility.HtmlEncode(ex) + "</pre></blockquote>";
-                    Response.Write(strError);
             }
         }
 
