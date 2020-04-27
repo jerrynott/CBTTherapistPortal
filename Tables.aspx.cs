@@ -117,7 +117,7 @@ namespace TherapistPortal
             }
             catch (Exception ex)
             {
-                    string strError = "Jerry Error" + jnn.ToString() + "</pre></blockquote>";
+                    string strError = "<br/>FFS Jerry --- <blockquote><pre>" + HttpUtility.HtmlEncode(ex) + "</pre></blockquote>";
                     Response.Write(strError);
             }
         }
