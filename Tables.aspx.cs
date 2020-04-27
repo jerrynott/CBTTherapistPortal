@@ -66,7 +66,9 @@ namespace TherapistPortal
             
                 userID = Global.GetIDFromWindowsLive(Request);
                 
-             Response.Write("<br/>jerry 02: " + StorageConnectionString.ToString());
+             Response.Write("<br/>jerry 02a: " + StorageConnectionString.ToString());
+             
+             Response.Write("<br/>jerry 02b: " + Environment.GetEnvironmentVariable("StorageAccount").ToString());
              
              Response.Write("<br/>jerry 03: " + Environment.GetEnvironmentVariable("TherapistPortalUserIDs").ToString());
              
