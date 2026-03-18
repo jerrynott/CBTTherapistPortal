@@ -1,6 +1,6 @@
-﻿using Microsoft.Live;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Web;
 using System.Web.Routing;
@@ -47,5 +47,34 @@ namespace TherapistPortal
 
             return (string)data["id"];
         }
+
+        public static string GetIDFromAzure(HttpRequest request)
+        {
+            var fromAzure = request.Headers["X-MS-CLIENT-PRINCIPAL-ID"];
+            if (!String.IsNullOrWhiteSpace(fromAzure))
+            {
+                return fromAzure;
+            }
+
+            var idToken = request.Headers["X-MS-TOKEN-AAD-ID-TOKEN"];
+            if (!string.IsNullOrWhiteSpace(idToken))
+            {
+                var handler = new JwtSecurityTokenHandler();
+                if (handler.CanReadToken(idToken))
+                {
+                    var jwt = ReadJwtToken(idToken);
+
+                    var oid = jwt.Claims.FirstOrDefault(c => c.Type == "oid")?.Value ?? jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+
+                    if (!string.IsNullOrWhiteSpace(oid))
+                    {
+                        return oid;
+                    }
+                }
+            }
+
+            throw new UnauthorizedAccessException("Unable to determine the authenticated user's ID. " +
+                "Ensure Azure App Service Authentication (Easy Auth v2) is enabled " +
+                "and the request has been authenticated before reaching this code.");
+        }
     }
-}
