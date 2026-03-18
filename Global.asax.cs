@@ -36,7 +36,7 @@ namespace TherapistPortal
                 throw new LiveConnectException(null, "access_token not present.");
             }
 
-            var client = new LiveConnectClient((LiveConnectSession)Activator.CreateInstance(typeof(LiveConnectSession), true));
+            var client = new LiveConnectClient((LiveConnectSession) Activator.CreateInstance(typeof(LiveConnectSession), true));
             typeof(LiveConnectSession).GetProperty("AccessToken").SetValue(client.Session, access_token);
             var result = client.GetAsync("me").Result;
             var data = result.Result;
@@ -45,7 +45,7 @@ namespace TherapistPortal
                 throw new LiveConnectException(null, "Windows Live returned an error: " + result.RawResult);
             }
 
-            return (string)data["id"];
+            return (string) data["id"];
         }
 
         public static string GetIDFromAzure(HttpRequest request)
@@ -78,3 +78,4 @@ namespace TherapistPortal
                 "and the request has been authenticated before reaching this code.");
         }
     }
+}
