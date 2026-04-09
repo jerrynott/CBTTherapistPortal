@@ -221,12 +221,8 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App_Code\Azure.cs">
-      <Link>App_Code\Azure.cs</Link>
-    </Content>
-    <Content Include="App_Code\Extensions.cs">
-      <Link>App_Code\Extensions.cs</Link>
-    </Content>
+    <Content Include="App_Code\Azure.cs" />
+    <Content Include="App_Code\Extensions.cs" />
     <Compile Include="ExcelTableEntity.cs" />
     <Compile Include="ExportToExcel.cs" />
     <Compile Include="Global.asax.cs">
