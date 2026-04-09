@@ -1,0 +1,34 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.Master.cs" Inherits="TherapistPortal.SiteMaster" %>
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CBT Therapist Portal</title>
+    <link rel="stylesheet" type="text/css" href="normalize.css" />
+    <link rel="stylesheet" type="text/css" href="Content/site.css" />
+    <script src="Scripts/jquery-1.10.2.min.js"></script>
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+</head>
+<body>
+    <header class="site-header">
+        <nav class="nav">
+            <span class="nav-brand">Therapist Portal</span>
+            <ul class="nav-links">
+                <li><a href="Tables.aspx">Tables</a></li>
+                <li><a href="Notifier.aspx">Notifier</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+    </main>
+
+    <footer class="site-footer">
+        <span>PocketSkills &mdash; CBT Therapist Portal</span>
+    </footer>
+</body>
+</html>

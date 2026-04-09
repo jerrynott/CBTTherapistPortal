@@ -1,78 +1,59 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Notifier.aspx.cs" Inherits="TherapistPortal.Notifier" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Notifier.aspx.cs" Inherits="TherapistPortal.Notifier" MasterPageFile="~/Site.Master" %>
 
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <title></title>
-    <link rel="stylesheet" type="text/css" href="normalize.css" />
-    <script src="Scripts/jquery-1.10.2.min.js">   
-    </script>
+<asp:Content ContentPlaceHolderID="HeadContent" runat="server">
     <script type="text/javascript">
         $(document).ready(function () {
-
             $("#btn_Import").click(function () {
-                var containerName = $("#txt_TableName").val();
-                var patrn = /^[a-z]([a-z0-9])*$/;
-                var result = patrn.test(containerName);
-                if (!result) {
-                    $("#lbl_NameError").css("visibility", "visible");
+                var filename = $("#ful_FileUpLoad").val();
+                if (filename.length > 0) {
+                    return true;
+                } else {
+                    alert("Select the files you want to upload first.");
                     return false;
-                }
-                else {
-                    if (containerName.length >= 3 && containerName.length <= 63) {
-                        $("#lbl_NameError").css("visibility", "hidden");
-                        //check files name
-                        var filename = $("#ful_FileUpLoad").val();
-                        if (filename.length > 0) {
-                            return true;
-                        } else {
-                            alert("Select the files you want to upload first.");
-                            return false;
-                        }
-                    } else {
-                        $("#lbl_NameError").css("visibility", "visible");
-                        return false;
-                    }
                 }
             });
         });
     </script>
-</head>
-<body>
+</asp:Content>
+
+<asp:Content ContentPlaceHolderID="MainContent" runat="server">
     <form id="form1" runat="server">
-        <div>
-            <div style="font-weight: 600">Notifier Status</div>
-            <asp:Label ID="lbl_Contacts" runat="server"></asp:Label>
-            <br />
-            <br />
-            <asp:Table ID="tbl_TableContactList" runat="server" EnableViewState="false" Font-Size="15px" style="white-space: nowrap">
+
+        <%-- Status section --%>
+        <div class="section">
+            <h2 class="section-title">Notifier Status</h2>
+            <asp:Label ID="lbl_Contacts" runat="server" CssClass="field-note"></asp:Label>
+
+            <asp:Table ID="tbl_TableContactList" runat="server" EnableViewState="false"
+                CssClass="data-table" style="margin-bottom: 16px">
                 <asp:TableRow></asp:TableRow>
             </asp:Table>
-            <br />
-            <asp:Table ID="tbl_TableNotifierStatus" runat="server" EnableViewState="false" Font-Size="15px" style="white-space: nowrap">
+
+            <asp:Table ID="tbl_TableNotifierStatus" runat="server" EnableViewState="false"
+                CssClass="data-table">
                 <asp:TableRow></asp:TableRow>
             </asp:Table>
-            <br />
-            <hr />
         </div>
-        <br />
-        <div>
-            <div>
-                <div style="font-weight: 600">Import Excel files to Notifier</div>
+
+        <hr class="section-divider" />
+
+        <%-- Import section --%>
+        <div class="section">
+            <h2 class="section-title">Import Excel Files to Notifier</h2>
+
+            <div class="field-group">
+                <label for="ful_FileUpLoad">Select Excel file(s) to import:</label>
+                <asp:FileUpload runat="server" AllowMultiple="true" ID="ful_FileUpLoad" />
             </div>
-            <br />
-            <label id="lbl_FileInfo" style="font-weight: 600">Select the excel files you want to import</label>
-            <br />
-            <asp:FileUpload runat="server" AllowMultiple="true" ID="ful_FileUpLoad" />
-            <br />
-            <br />
-            <label id="lbl_SheetNames" style="font-weight: 600">[Optional] Enter a comma-separated list of worksheet names to import (or leave blank to import all worksheets)</label><br />
-            <asp:TextBox ID="txt_SheetNames" runat="server" Width="50%"></asp:TextBox>
-            <br />
-            <br />
-            <asp:Button ID="btn_Import" runat="server" Text="Import" OnClick="btn_Import_Click" />
+
+            <div class="field-group">
+                <label for="txt_SheetNames">Worksheet names (optional, comma-separated — leave blank to import all):</label>
+                <asp:TextBox ID="txt_SheetNames" runat="server" Width="100%"></asp:TextBox>
+            </div>
+
+            <asp:Button ID="btn_Import" runat="server" Text="Import"
+                OnClick="btn_Import_Click" CssClass="btn" />
         </div>
+
     </form>
-</body>
-</html>
+</asp:Content>

@@ -12,6 +12,11 @@ namespace TherapistPortal
     {
         protected void Application_Start(object sender, EventArgs e)
         {
+            var envURI = Server.MapPath("~/.env.dev");
+            if (System.IO.File.Exists(envURI))
+            {
+                DotNetEnv.Env.Load(envURI);
+            }
             RouteTable.Routes.Ignore("");
         }
 
