@@ -56,6 +56,11 @@ namespace TherapistPortal
             if (!Request.IsLocal)
             {
                 userID = Global.GetIDFromAzure(Request);
+                if (userID == null)
+                {
+                    Global.RedirectToLogin(Request, Response);
+                    return;
+                }
                 if (!Environment.GetEnvironmentVariable("TherapistPortalUserIDs").Contains(userID))
                 {
                     throw new UnauthorizedAccessException("Your User ID (" + userID + ") is not in TherapistPortalUserIDs and therefore cannot access this page.");

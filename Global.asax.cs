@@ -77,9 +77,17 @@ namespace TherapistPortal
             //    }
             //}
 
-            throw new UnauthorizedAccessException("Unable to determine the authenticated user's ID. " +
-                "Ensure Azure App Service Authentication (Easy Auth v2) is enabled " +
-                "and the request has been authenticated before reaching this code.");
+            //throw new UnauthorizedAccessException("Unable to determine the authenticated user's ID. " +
+            //    "Ensure Azure App Service Authentication (Easy Auth v2) is enabled " +
+            //    "and the request has been authenticated before reaching this code.");
+
+            return null;
+        }
+
+        public static void RedirectToLogin(HttpRequest request, HttpResponse response)
+        {
+            var returnUrl = HttpUtility.UrlEncode(request.Url.PathAndQuery);
+            response.Redirect("/.auth/login/aad?post_login_redirect_uri=" + returnUrl);
         }
     }
 }
