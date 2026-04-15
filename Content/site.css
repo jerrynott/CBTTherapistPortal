@@ -244,18 +244,30 @@ button:hover,
     font-size: 13px;
 }
 
-/* Active (current) mode button — outlined, no fill, inherits bar text colour */
-.db-mode-dev  .btn-mode-active,
-.db-mode-prod .btn-mode-active {
-    background:   transparent;
-    color:        inherit;
-    border:       2px solid currentColor;
-    font-weight:  700;
-    cursor:       default;
-    opacity:      1;
+/* Active (current) mode button — solid fill, shows current selection */
+.db-mode-dev .btn-mode-active {
+    background:  #15803d;
+    color:       #ffffff;
+    border:      2px solid #15803d;
+    font-weight: 700;
+    cursor:      default;
 }
 
-/* Inactive mode button — solid primary style (default .btn already handles this) */
+.db-mode-prod .btn-mode-active {
+    background:  #b91c1c;
+    color:       #ffffff;
+    border:      2px solid #b91c1c;
+    font-weight: 700;
+    cursor:      default;
+}
+
+/* Inactive mode button — outlined, invites clicking */
+.db-mode-dev  .btn-mode:not(.btn-mode-active),
+.db-mode-prod .btn-mode:not(.btn-mode-active) {
+    background:  transparent;
+    color:       inherit;
+    border:      2px solid currentColor;
+}
 
 /* ----- Checkbox list -------------------------------- */
 .checkbox-list {

@@ -51,8 +51,8 @@ namespace TherapistPortal
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            prodStorageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-            devStorageAccount = CloudStorageAccount.Parse(DevStorageConnectionString);
+            prodStorageAccount = !string.IsNullOrEmpty(StorageConnectionString) ? CloudStorageAccount.Parse(StorageConnectionString) : null;
+            devStorageAccount  = !string.IsNullOrEmpty(DevStorageConnectionString) ? CloudStorageAccount.Parse(DevStorageConnectionString) : null;
             ChangeTargetDatabase(CurrentDbMode);
             UpdateDbModeButtons();
             string userID = null;
@@ -621,6 +621,7 @@ namespace TherapistPortal
         private void UpdateDbModeButtons()
         {
             bool isDev = CurrentDbMode == "dev";
+            btn_Dev.Visible   = devStorageAccount != null;
             btn_Dev.CssClass  = "btn btn-mode" + (isDev  ? " btn-mode-active" : "");
             btn_Prod.CssClass = "btn btn-mode" + (!isDev ? " btn-mode-active" : "");
             btn_Dev.Enabled   = !isDev;
