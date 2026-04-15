@@ -210,6 +210,53 @@ button:hover,
     background: var(--color-primary-dark);
 }
 
+/* ----- Database mode toggle ------------------------- */
+.db-mode-bar {
+    display:       flex;
+    align-items:   center;
+    gap:           var(--spacing-sm);
+    padding:       var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius);
+    margin-bottom: var(--spacing-lg);
+    font-size:     14px;
+    font-weight:   600;
+    border:        1px solid transparent;
+}
+
+.db-mode-label {
+    margin-right: var(--spacing-xs);
+}
+
+.db-mode-dev {
+    background:   #dcfce7;
+    border-color: #86efac;
+    color:        #15803d;
+}
+
+.db-mode-prod {
+    background:   #fee2e2;
+    border-color: #fca5a5;
+    color:        #b91c1c;
+}
+
+.btn-mode {
+    padding:   4px 18px;
+    font-size: 13px;
+}
+
+/* Active (current) mode button — outlined, no fill, inherits bar text colour */
+.db-mode-dev  .btn-mode-active,
+.db-mode-prod .btn-mode-active {
+    background:   transparent;
+    color:        inherit;
+    border:       2px solid currentColor;
+    font-weight:  700;
+    cursor:       default;
+    opacity:      1;
+}
+
+/* Inactive mode button — solid primary style (default .btn already handles this) */
+
 /* ----- Checkbox list -------------------------------- */
 .checkbox-list {
     display:       flex;

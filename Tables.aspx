@@ -33,6 +33,13 @@
 <asp:Content ContentPlaceHolderID="MainContent" runat="server">
     <form id="form1" runat="server">
 
+        <%-- Database mode toggle --%>
+        <div class="db-mode-bar db-mode-<%= CurrentDbMode %>">
+            <span class="db-mode-label">Target Database:</span>
+            <asp:Button ID="btn_Dev"  runat="server" Text="Dev"  OnClick="btn_Dev_Click" />
+            <asp:Button ID="btn_Prod" runat="server" Text="Prod" OnClick="btn_Prod_Click" />
+        </div>
+
         <%-- Export section --%>
         <div class="section">
             <h2 class="section-title">Download Azure Tables to Excel</h2>
