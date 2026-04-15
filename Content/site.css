@@ -216,6 +216,87 @@ button:hover,
     background: var(--color-primary-dark);
 }
 
+/* ----- Database mode toggle ------------------------- */
+.db-mode-bar {
+    display:       flex;
+    align-items:   center;
+    gap:           var(--spacing-sm);
+    padding:       var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius);
+    margin-bottom: var(--spacing-lg);
+    font-size:     14px;
+    font-weight:   600;
+    border:        1px solid transparent;
+}
+
+.db-mode-label {
+    margin-right: var(--spacing-xs);
+}
+
+.db-mode-dev {
+    background:   #dcfce7;
+    border-color: #86efac;
+    color:        #15803d;
+}
+
+.db-mode-prod {
+    background:   #fee2e2;
+    border-color: #fca5a5;
+    color:        #b91c1c;
+}
+
+/* Base for both mode buttons — size and shape only */
+.btn-mode {
+    padding:       6px 18px;
+    font-size:     13px;
+    border-width:  2px;
+    border-style:  solid;
+    font-weight:   600;
+    transition:    background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+/* ── Selected button: solid fill, disabled, no hover ── */
+.db-mode-dev .btn-mode-active {
+    background:   #15803d;
+    color:        #ffffff;
+    border-color: #15803d;
+    opacity:      1;          /* cancel browser disabled grey-out */
+    cursor:       default;
+}
+
+.db-mode-prod .btn-mode-active {
+    background:   #b91c1c;
+    color:        #ffffff;
+    border-color: #b91c1c;
+    opacity:      1;
+    cursor:       default;
+}
+
+/* ── Pressable button: outline, darkens on hover ── */
+.db-mode-dev .btn-mode:not(.btn-mode-active) {
+    background:   transparent;
+    color:        #15803d;
+    border-color: #15803d;
+}
+
+.db-mode-dev .btn-mode:not(.btn-mode-active):hover {
+    background:   #166534;
+    color:        #ffffff;
+    border-color: #166534;
+}
+
+.db-mode-prod .btn-mode:not(.btn-mode-active) {
+    background:   transparent;
+    color:        #b91c1c;
+    border-color: #b91c1c;
+}
+
+.db-mode-prod .btn-mode:not(.btn-mode-active):hover {
+    background:   #991b1b;
+    color:        #ffffff;
+    border-color: #991b1b;
+}
+
 /* ----- Checkbox list -------------------------------- */
 .checkbox-list {
     display:       flex;
