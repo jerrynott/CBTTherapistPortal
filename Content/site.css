@@ -255,49 +255,48 @@ button:hover,
     transition:    background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
-/* ── Selected button: solid fill + contrasting border, disabled ── */
-.db-mode-dev .btn-mode-active {
+/* ── Selected button: solid fill, disabled, hover locked ── */
+.db-mode-dev .btn-mode-active,
+.db-mode-dev .btn-mode-active:hover {
     background:   #15803d;
     color:        #ffffff;
-    border:       2px solid #14532d;
-    opacity:      1;          /* cancel browser disabled grey-out */
-    cursor:       default;
-}
-
-.db-mode-prod .btn-mode-active {
-    background:   #b91c1c;
-    color:        #ffffff;
-    border:       2px solid #7f1d1d;
+    border-color: #15803d;
     opacity:      1;
     cursor:       default;
 }
 
-/* ── Pressable button: outline, no hover interaction ── */
+.db-mode-prod .btn-mode-active,
+.db-mode-prod .btn-mode-active:hover {
+    background:   #b91c1c;
+    color:        #ffffff;
+    border-color: #b91c1c;
+    opacity:      1;
+    cursor:       default;
+}
+
+/* ── Pressable button: outline with explicit border, darkens on hover ── */
 .db-mode-dev .btn-mode:not(.btn-mode-active) {
-    background:   transparent;
-    color:        #15803d;
-    border-color: #15803d;
+    background:  transparent;
+    color:       #15803d;
+    border:      2px solid #15803d;
+}
+
+.db-mode-dev .btn-mode:not(.btn-mode-active):hover {
+    background:   #166534;
+    color:        #ffffff;
+    border-color: #166534;
 }
 
 .db-mode-prod .btn-mode:not(.btn-mode-active) {
-    background:   transparent;
-    color:        #b91c1c;
-    border-color: #b91c1c;
+    background:  transparent;
+    color:       #b91c1c;
+    border:      2px solid #b91c1c;
 }
 
-/* Override the generic .btn:hover blue for mode buttons */
-.db-mode-dev .btn-mode:hover,
-.db-mode-prod .btn-mode:hover {
-    background: transparent;
-}
-
-.db-mode-dev .btn-mode-active:hover,
-.db-mode-prod .btn-mode-active:hover {
-    background: #15803d;
-}
-
-.db-mode-prod .btn-mode-active:hover {
-    background: #b91c1c;
+.db-mode-prod .btn-mode:not(.btn-mode-active):hover {
+    background:   #991b1b;
+    color:        #ffffff;
+    border-color: #991b1b;
 }
 
 /* ----- Checkbox list -------------------------------- */
