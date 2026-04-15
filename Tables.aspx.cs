@@ -46,13 +46,13 @@ namespace TherapistPortal
         private static string StorageConnectionString = Environment.GetEnvironmentVariable("StorageAccount");
         private static string DevStorageConnectionString = Environment.GetEnvironmentVariable("StorageAccountDev");
 
-        CloudStorageAccount prodStorageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-        CloudStorageAccount devStorageAccount = CloudStorageAccount.Parse(DevStorageConnectionString);
-
+        CloudStorageAccount prodStorageAccount, devStorageAccount;
         CloudStorageAccount storageAccount;
 
         protected void Page_Load(object sender, EventArgs e)
-        {        
+        {
+            CloudStorageAccount prodStorageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+            CloudStorageAccount devStorageAccount = CloudStorageAccount.Parse(DevStorageConnectionString);
             string userID = null;
             if (!Request.IsLocal)
             {
