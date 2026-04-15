@@ -46,6 +46,9 @@ namespace TherapistPortal
         private static string StorageConnectionString = Environment.GetEnvironmentVariable("StorageAccount");
         private static string DevStorageConnectionString = Environment.GetEnvironmentVariable("StorageAccountDev");
 
+        CloudStorageAccount prodStorageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+        CloudStorageAccount devStorageAccount = CloudStorageAccount.Parse(DevStorageConnectionString);
+
         CloudStorageAccount storageAccount;
 
         protected void Page_Load(object sender, EventArgs e)
@@ -76,9 +79,6 @@ namespace TherapistPortal
                 }
             }
 
-            storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-            ChangeTargetDatabase(CurrentDbMode);
-            UpdateDbModeButtons();
             if (!IsPostBack)
             {
                 try
@@ -614,50 +614,15 @@ namespace TherapistPortal
             }
         }
 
-        /// <summary>
-        /// Exposes the currently selected database mode ("dev" or "prod") to the .aspx markup.
-        /// </summary>
-        public string CurrentDbMode => (ViewState["DbTarget"] as string) ?? "prod";
-
-        /// <summary>
-        /// Reflects the active mode on the toggle buttons: active button is disabled and styled.
-        /// </summary>
-        private void UpdateDbModeButtons()
-        {
-            bool isDev = CurrentDbMode == "dev";
-            btn_Dev.CssClass  = "btn btn-mode" + (isDev  ? " btn-mode-active" : "");
-            btn_Prod.CssClass = "btn btn-mode" + (!isDev ? " btn-mode-active" : "");
-            btn_Dev.Enabled   = !isDev;
-            btn_Prod.Enabled  = isDev;
-        }
-
-        protected void btn_Dev_Click(object sender, EventArgs e)
-        {
-            ViewState["DbTarget"] = "dev";
-            ViewState.Remove("SelectedTableName");
-            ChangeTargetDatabase("dev");
-            UpdateDbModeButtons();
-            GetAllTableName();
-        }
-
-        protected void btn_Prod_Click(object sender, EventArgs e)
-        {
-            ViewState["DbTarget"] = "prod";
-            ViewState.Remove("SelectedTableName");
-            ChangeTargetDatabase("prod");
-            UpdateDbModeButtons();
-            GetAllTableName();
-        }
-
         private void ChangeTargetDatabase(string target)
         {
             switch (target)
             {
                 case "dev":
-                    storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+                    storageAccount = devStorageAccount;
                     break;
                 case "prod":
-                    storageAccount = CloudStorageAccount.Parse(DevStorageConnectionString);
+                    storageAccount = prodStorageAccount;
                     break;
                 default:
                     break;
