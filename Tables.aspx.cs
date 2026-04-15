@@ -48,10 +48,7 @@ namespace TherapistPortal
         CloudStorageAccount storageAccount;
 
         protected void Page_Load(object sender, EventArgs e)
-        {
-            string jerry = "<h1>Loading it Jerry !!! </h1>";
-            Response.Write(jerry);
-        
+        {        
             string userID = null;
             if (!Request.IsLocal)
             {

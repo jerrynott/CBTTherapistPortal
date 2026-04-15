@@ -16,10 +16,6 @@
     <header class="site-header">
         <nav class="nav">
             <span class="nav-brand">Therapist Portal</span>
-            <ul class="nav-links">
-                <li><a href="Tables.aspx">Tables</a></li>
-                <li><a href="Notifier.aspx">Notifier</a></li>
-            </ul>
         </nav>
     </header>
 
