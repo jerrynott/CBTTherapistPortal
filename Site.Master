@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PAET Therapist Portal</title>
     <link rel="stylesheet" type="text/css" href="normalize.css" />
-    <link rel="stylesheet" type="text/css" href="Content/site.css" />
+    <link rel="stylesheet" type="text/css" href="Content/site.css?v=1.0" />
     <script src="Scripts/jquery-1.10.2.min.js"></script>
     <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
 </head>
