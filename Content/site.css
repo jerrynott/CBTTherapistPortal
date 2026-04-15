@@ -143,10 +143,12 @@ hr.section-divider {
 
 /* ----- Form controls -------------------------------- */
 label {
-    display:     block;
+    display:     inline;
     font-weight: 500;
     font-size:   14px;
+    margin-left: 1rem;
     margin-bottom: var(--spacing-xs);
+    vertical-align: middle;
 }
 
 input[type="text"],
@@ -222,14 +224,10 @@ button:hover,
 }
 
 /* Keep checkbox labels inline (overrides the global block label rule) */
-input[type="checkbox"] + label {
+input[type="checkbox"]{
     display:     inline;
     font-weight: normal;
     margin-bottom: 0;
-    vertical-align: middle;
-}
-
-input[type="checkbox"] {
     vertical-align: middle;
 }
 

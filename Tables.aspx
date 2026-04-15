@@ -69,7 +69,7 @@
                 </asp:Table>
             </div>
 
-            <asp:Button ID="btn_ExportData" runat="server" Text="Export To Excel"
+            <asp:Button ID="btn_ExportData" runat="server" Text="Download Excel"
                 OnClick="btn_ExportData_Click" CssClass="btn" />
         </div>
 
