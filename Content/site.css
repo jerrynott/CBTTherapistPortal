@@ -244,29 +244,34 @@ button:hover,
     font-size: 13px;
 }
 
-/* Active (current) mode button — solid fill, shows current selection */
+/* Active (current) mode button — outlined, shows current selection */
 .db-mode-dev .btn-mode-active {
-    background:  #15803d;
-    color:       #ffffff;
+    background:  transparent;
+    color:       #15803d;
     border:      2px solid #15803d;
     font-weight: 700;
     cursor:      default;
 }
 
 .db-mode-prod .btn-mode-active {
-    background:  #b91c1c;
-    color:       #ffffff;
+    background:  transparent;
+    color:       #b91c1c;
     border:      2px solid #b91c1c;
     font-weight: 700;
     cursor:      default;
 }
 
-/* Inactive mode button — outlined, invites clicking */
-.db-mode-dev  .btn-mode:not(.btn-mode-active),
+/* Inactive mode button — solid fill, invites clicking */
+.db-mode-dev  .btn-mode:not(.btn-mode-active) {
+    background:  #15803d;
+    color:       #ffffff;
+    border:      2px solid #15803d;
+}
+
 .db-mode-prod .btn-mode:not(.btn-mode-active) {
-    background:  transparent;
-    color:       inherit;
-    border:      2px solid currentColor;
+    background:  #b91c1c;
+    color:       #ffffff;
+    border:      2px solid #b91c1c;
 }
 
 /* ----- Checkbox list -------------------------------- */

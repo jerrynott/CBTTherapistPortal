@@ -624,8 +624,8 @@ namespace TherapistPortal
             btn_Dev.Visible   = devStorageAccount != null;
             btn_Dev.CssClass  = "btn btn-mode" + (isDev  ? " btn-mode-active" : "");
             btn_Prod.CssClass = "btn btn-mode" + (!isDev ? " btn-mode-active" : "");
-            btn_Dev.Enabled   = !isDev;
-            btn_Prod.Enabled  = isDev;
+            btn_Dev.Enabled = !isDev;
+            btn_Prod.Enabled = isDev;
         }
 
         protected void btn_Dev_Click(object sender, EventArgs e)
