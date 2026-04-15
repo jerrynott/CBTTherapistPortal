@@ -51,8 +51,10 @@ namespace TherapistPortal
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            CloudStorageAccount prodStorageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-            CloudStorageAccount devStorageAccount = CloudStorageAccount.Parse(DevStorageConnectionString);
+            prodStorageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+            devStorageAccount = CloudStorageAccount.Parse(DevStorageConnectionString);
+            ChangeTargetDatabase(CurrentDbMode);
+            UpdateDbModeButtons();
             string userID = null;
             if (!Request.IsLocal)
             {
@@ -612,6 +614,35 @@ namespace TherapistPortal
                     celltitle.Text = item.Text + " (" + (i > limit ? "over " + limit : i.ToString()) + " rows)";
                 }
             }
+        }
+
+        public string CurrentDbMode => (ViewState["DbTarget"] as string) ?? "prod";
+
+        private void UpdateDbModeButtons()
+        {
+            bool isDev = CurrentDbMode == "dev";
+            btn_Dev.CssClass  = "btn btn-mode" + (isDev  ? " btn-mode-active" : "");
+            btn_Prod.CssClass = "btn btn-mode" + (!isDev ? " btn-mode-active" : "");
+            btn_Dev.Enabled   = !isDev;
+            btn_Prod.Enabled  = isDev;
+        }
+
+        protected void btn_Dev_Click(object sender, EventArgs e)
+        {
+            ViewState["DbTarget"] = "dev";
+            ViewState.Remove("SelectedTableName");
+            ChangeTargetDatabase("dev");
+            UpdateDbModeButtons();
+            GetAllTableName();
+        }
+
+        protected void btn_Prod_Click(object sender, EventArgs e)
+        {
+            ViewState["DbTarget"] = "prod";
+            ViewState.Remove("SelectedTableName");
+            ChangeTargetDatabase("prod");
+            UpdateDbModeButtons();
+            GetAllTableName();
         }
 
         private void ChangeTargetDatabase(string target)
