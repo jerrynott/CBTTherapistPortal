@@ -55,6 +55,8 @@ namespace TherapistPortal
         public static string GetIDFromAzure(HttpRequest request)
         {
             var fromAzure = request.Headers["X-MS-CLIENT-PRINCIPAL-ID"];
+            System.Diagnostics.Debug.WriteLine($"Azure code: {fromAzure}");
+
             if (!String.IsNullOrWhiteSpace(fromAzure))
             {
                 return fromAzure;
