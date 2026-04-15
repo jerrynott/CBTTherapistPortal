@@ -221,6 +221,18 @@ button:hover,
     padding: 2px var(--spacing-sm);
 }
 
+/* Keep checkbox labels inline (overrides the global block label rule) */
+input[type="checkbox"] + label {
+    display:     inline;
+    font-weight: normal;
+    margin-bottom: 0;
+    vertical-align: middle;
+}
+
+input[type="checkbox"] {
+    vertical-align: middle;
+}
+
 /* ----- Tables --------------------------------------- */
 table.data-table {
     width:           100%;

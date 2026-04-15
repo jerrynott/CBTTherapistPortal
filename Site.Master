@@ -6,7 +6,7 @@
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CBT Therapist Portal</title>
+    <title>PAET Therapist Portal</title>
     <link rel="stylesheet" type="text/css" href="normalize.css" />
     <link rel="stylesheet" type="text/css" href="Content/site.css" />
     <script src="Scripts/jquery-1.10.2.min.js"></script>
@@ -15,7 +15,7 @@
 <body>
     <header class="site-header">
         <nav class="nav">
-            <span class="nav-brand">Therapist Portal</span>
+            <span class="nav-brand"> PAET Therapist Portal</span>
         </nav>
     </header>
 

@@ -35,12 +35,12 @@
 
         <%-- Export section --%>
         <div class="section">
-            <h2 class="section-title">Export Azure Tables to Excel</h2>
+            <h2 class="section-title">Download Azure Tables to Excel</h2>
             <ol class="section-instructions">
                 <li>Select the storage table(s) you want to export.</li>
                 <li>Optionally enter an OData query string to filter results.</li>
                 <li>Optionally check "Preview table details" to view 10 records per table.</li>
-                <li>Click <strong>Export To Excel</strong>.</li>
+                <li>Click <strong>Download Excel</strong>.</li>
             </ol>
 
             <div class="field-group">
@@ -50,9 +50,10 @@
             </div>
 
             <div class="field-group">
-                <label for="txt_FilterString">Filter (OData):</label>
+                <label for="txt_FilterString">Filter:</label>
                 <asp:TextBox ID="txt_FilterString" runat="server" Width="100%"
                     AutoPostBack="true" CssClass="filter-input"></asp:TextBox>
+                <div></div>
                 <span class="field-note">
                     Example: <code><asp:Label ID="lbl_Example" runat="server">Timestamp ge datetime'2017-05-31T23:59:59Z'</asp:Label></code>
                 </span>
@@ -76,10 +77,10 @@
 
         <%-- Import section --%>
         <div class="section">
-            <h2 class="section-title">Import Excel Files to an Azure Table</h2>
+            <h2 class="section-title">Upload Excel Files to an Azure</h2>
             <ol class="section-instructions">
                 <li>Enter the name of the destination storage table.</li>
-                <li>Table names must be 3–63 characters, start with a letter, and contain only alphanumeric characters.</li>
+                <li>Table names must be 3-63 characters, start with a letter, and contain only alphanumeric characters.</li>
                 <li>Table names are case-sensitive.</li>
             </ol>
 
@@ -96,11 +97,11 @@
             </div>
 
             <div class="field-group">
-                <label for="txt_SheetNames">Worksheet names (optional, comma-separated — leave blank to import all):</label>
+                <label for="txt_SheetNames">Worksheet names (optional, comma-separated - leave blank to import all):</label>
                 <asp:TextBox ID="txt_SheetNames" runat="server" Width="100%"></asp:TextBox>
             </div>
 
-            <asp:Button ID="btn_Import" runat="server" Text="Import to Azure"
+            <asp:Button ID="btn_Import" runat="server" Text="Upload to Azure"
                 OnClick="btn_Import_Click" CssClass="btn" />
         </div>
 
