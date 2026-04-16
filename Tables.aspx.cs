@@ -616,7 +616,7 @@ namespace TherapistPortal
             }
         }
 
-        public string CurrentDbMode => (ViewState["DbTarget"] as string) ?? "prod";
+        public string CurrentDbMode => (ViewState["DbTarget"] as string) ?? "dev";
 
         private void UpdateDbModeButtons()
         {
