@@ -83,7 +83,7 @@
         <hr class="section-divider" />
 
         <%-- Import section --%>
-        <div class="section">
+        <div class="section db-mode-<%= CurrentDbMode %>">
             <h2 class="section-title">Upload Excel Files to an Azure</h2>
             <ol class="section-instructions">
                 <li>Enter the name of the destination storage table.</li>
