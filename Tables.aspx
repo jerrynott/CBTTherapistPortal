@@ -84,7 +84,7 @@
 
         <%-- Import section --%>
         <div class="section db-mode-<%= CurrentDbMode %>">
-            <h2 class="section-title">Upload Excel Files to an Azure</h2>
+            <h2 class="section-title">Upload Excel Files to Azure <u><%= CurrentDbMode == "prod" ? "Prod" : "Dev" %></u> Database</h2>
             <ol class="section-instructions">
                 <li>Enter the name of the destination storage table.</li>
                 <li>Table names must be 3-63 characters, start with a letter, and contain only alphanumeric characters.</li>
