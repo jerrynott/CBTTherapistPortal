@@ -16,7 +16,7 @@
                         var filename = $("#ful_FileUpLoad").val();
                         if (filename.length > 0) {
                             var mode = $('#<%= hf_DbMode.ClientID %>').val();
-                            Response.Write("<script>console.log(`Mode: ${mode}`);</script>");
+                            console.log(`Mode: ${mode}`);
                             if (mode === 'prod') {
                                 if (!confirm('You are about to import into PRODUCTION. Are you sure?')) {
                                     return false;
