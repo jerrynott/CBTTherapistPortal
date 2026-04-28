@@ -15,6 +15,12 @@
                         $("#lbl_NameError").css("visibility", "hidden");
                         var filename = $("#ful_FileUpLoad").val();
                         if (filename.length > 0) {
+                            var mode = $('#<%= hf_DbMode.ClientID %>').val();
+                            if (mode === 'prod') {
+                                if (!confirm('You are about to import into PRODUCTION. Are you sure?')) {
+                                    return false;
+                                }
+                            }
                             return true;
                         } else {
                             alert("Select the files you want to upload first.");
@@ -32,6 +38,8 @@
 
 <asp:Content ContentPlaceHolderID="MainContent" runat="server">
     <form id="form1" runat="server">
+
+        <asp:HiddenField ID="hf_DbMode" runat="server" />
 
         <%-- Database mode toggle --%>
         <div class="db-mode-bar db-mode-<%= CurrentDbMode %>">

@@ -626,6 +626,7 @@ namespace TherapistPortal
             btn_Prod.CssClass = "btn btn-mode" + (!isDev ? " btn-mode-active" : "");
             btn_Dev.Enabled = !isDev;
             btn_Prod.Enabled = isDev;
+            hf_DbMode.Value = CurrentDbMode;
         }
 
         protected void btn_Dev_Click(object sender, EventArgs e)
