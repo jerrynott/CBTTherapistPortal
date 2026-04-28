@@ -11,9 +11,6 @@
                     $("#lbl_NameError").css("visibility", "visible");
                     return false;
                 } else {
-                    var mode = $('#<%= hf_DbMode.ClientID %>').val();
-                    console.log(`Mode: ${mode}`);
-                    debugger;
                     if (containerName.length >= 3 && containerName.length <= 63) {
                         $("#lbl_NameError").css("visibility", "hidden");
                         var filename = $("#ful_FileUpLoad").val();
@@ -27,6 +24,9 @@
                             }
                             return true;
                         } else {
+                            var mode = $('#<%= hf_DbMode.ClientID %>').val();
+                            console.log(`Mode: ${mode}`);
+                            debugger;
                             alert("Select the files you want to upload first.");
                             return false;
                         }
