@@ -11,6 +11,8 @@
                     $("#lbl_NameError").css("visibility", "visible");
                     return false;
                 } else {
+                    var mode = $('#<%= hf_DbMode.ClientID %>').val();
+                    console.log(`Mode: ${mode}`);
                     if (containerName.length >= 3 && containerName.length <= 63) {
                         $("#lbl_NameError").css("visibility", "hidden");
                         var filename = $("#ful_FileUpLoad").val();
