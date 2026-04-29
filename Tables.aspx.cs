@@ -286,8 +286,9 @@ namespace TherapistPortal
 
             FileStream stream = File.Open(strFilePath, FileMode.Open, FileAccess.Read);
 
-            //2. Reading from a OpenXml Excel file (2007 format; *.xlsx)
-            IExcelDataReader excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream);
+            IExcelDataReader excelReader = file.Extension.ToLower() == ".xls"
+                ? ExcelReaderFactory.CreateBinaryReader(stream)
+                : ExcelReaderFactory.CreateOpenXmlReader(stream);
 
             //4. DataSet - Create column names from first row
             excelReader.IsFirstRowAsColumnNames = true;
