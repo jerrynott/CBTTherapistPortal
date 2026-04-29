@@ -290,6 +290,9 @@ namespace TherapistPortal
                 ? ExcelReaderFactory.CreateBinaryReader(stream)
                 : ExcelReaderFactory.CreateOpenXmlReader(stream);
 
+            if (excelReader == null)
+                throw new Exception($"Could not read '{file.Name}'. The file may be corrupt, password-protected, or created by a newer version of Excel than this library supports.");
+
             //4. DataSet - Create column names from first row
             excelReader.IsFirstRowAsColumnNames = true;
             DataSet result = excelReader.AsDataSet();
