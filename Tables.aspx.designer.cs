@@ -7,11 +7,13 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace TherapistPortal {
-    
-    
-    public partial class Tables {
-        
+namespace TherapistPortal
+{
+
+
+    public partial class Tables
+    {
+
         /// <summary>
         /// form1 control.
         /// </summary>
@@ -20,52 +22,16 @@ namespace TherapistPortal {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
-        
+
         /// <summary>
-        /// ckb_TableName control.
+        /// hf_DbMode control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBoxList ckb_TableName;
-        
-        /// <summary>
-        /// txt_FilterString control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txt_FilterString;
-        
-        /// <summary>
-        /// lbl_Example control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lbl_Example;
-        
-        /// <summary>
-        /// chk_ShowDetails control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBox chk_ShowDetails;
-        
-        /// <summary>
-        /// tbl_TableDetailList control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Table tbl_TableDetailList;
-        
+        protected global::System.Web.UI.WebControls.HiddenField hf_DbMode;
+
         /// <summary>
         /// btn_Dev control.
         /// </summary>
@@ -85,6 +51,51 @@ namespace TherapistPortal {
         protected global::System.Web.UI.WebControls.Button btn_Prod;
 
         /// <summary>
+        /// ckb_TableName control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBoxList ckb_TableName;
+
+        /// <summary>
+        /// txt_FilterString control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txt_FilterString;
+
+        /// <summary>
+        /// lbl_Example control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lbl_Example;
+
+        /// <summary>
+        /// chk_ShowDetails control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.CheckBox chk_ShowDetails;
+
+        /// <summary>
+        /// tbl_TableDetailList control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Table tbl_TableDetailList;
+
+        /// <summary>
         /// btn_ExportData control.
         /// </summary>
         /// <remarks>
@@ -92,7 +103,7 @@ namespace TherapistPortal {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btn_ExportData;
-        
+
         /// <summary>
         /// txt_TableName control.
         /// </summary>
@@ -101,7 +112,7 @@ namespace TherapistPortal {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txt_TableName;
-        
+
         /// <summary>
         /// ful_FileUpLoad control.
         /// </summary>
@@ -110,7 +121,7 @@ namespace TherapistPortal {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.FileUpload ful_FileUpLoad;
-        
+
         /// <summary>
         /// txt_SheetNames control.
         /// </summary>
@@ -119,7 +130,7 @@ namespace TherapistPortal {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txt_SheetNames;
-        
+
         /// <summary>
         /// btn_Import control.
         /// </summary>
@@ -128,7 +139,5 @@ namespace TherapistPortal {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btn_Import;
-
-        protected global::System.Web.UI.WebControls.HiddenField hf_DbMode;
     }
 }
