@@ -221,7 +221,7 @@ namespace TherapistPortal
                     return;
                 }
 
-                CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+                CloudBlobClient blobClient = prodStorageAccount.CreateCloudBlobClient();
                 CloudBlobContainer container = blobClient.GetContainerReference("media");
                 container.CreateIfNotExists(BlobContainerPublicAccessType.Off);
 
@@ -246,8 +246,7 @@ namespace TherapistPortal
                         return;
                     }
 
-                    string blobName = DateTime.UtcNow.ToString("yyyyMMddHHmmss") + "_" + originalName;
-                    CloudBlockBlob blob = container.GetBlockBlobReference(blobName);
+                    CloudBlockBlob blob = container.GetBlockBlobReference(originalName);
                     blob.Properties.ContentType = contentType;
                     blob.UploadFromStream(file.InputStream);
                     uploaded.Add(originalName);
