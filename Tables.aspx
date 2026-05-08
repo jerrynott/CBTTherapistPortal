@@ -124,5 +124,22 @@
                 OnClick="btn_Import_Click" CssClass="btn" />
         </div>
 
+        <%-- Import media --%>
+        <div class="section">
+            <h2 class="section-title">Upload Media Files to Azure Database</h2>
+            <ol class="section-instructions">
+                <li>Select the media files to Upload to the server after pressing the "Choose files" button</li>
+                <li>Make sure the uploaded file list is correct</li>
+                <li>Click <b>Upload to Azure</b></li>
+            </ol>
+
+            <div class="field-group">
+                <label for="media_Upload">Select media files to upload:</label>
+                <asp:FileUpload runat="server" AllowMultiple="true" ID="media_Upload"/>
+            </div>
+
+            <asp:Button ID="btn_Upload" runat="server" Text="Upload to Azure" OnClick="btn_Media_Upload" CssClass="btn"/>
+        </div>
+
     </form>
 </asp:Content>

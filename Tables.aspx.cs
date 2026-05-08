@@ -22,6 +22,7 @@
 using Excel;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Web;
+using System.Web.Services.Description;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -183,8 +185,95 @@ namespace TherapistPortal
             RefreshAllTableName();
         }
 
+        protected void btn_Media_Upload(object sender, EventArgs e)
+        {
+            var allowedTypes = new Dictionary<string, string>
+            {
+                { ".mp4",  "video/mp4" },
+                { ".mov",  "video/quicktime" },
+                { ".avi",  "video/x-msvideo" },
+                { ".mkv",  "video/x-matroska" },
+                { ".webm", "video/webm" },
+                { ".wmv",  "video/x-ms-wmv" },
+                { ".m4v",  "video/x-m4v" },
+                { ".mp3",  "audio/mpeg" },
+                { ".wav",  "audio/wav" },
+                { ".aac",  "audio/aac" },
+                { ".ogg",  "audio/ogg" },
+                { ".m4a",  "audio/mp4" },
+                { ".flac", "audio/flac" },
+                { ".jpg",  "image/jpeg" },
+                { ".jpeg", "image/jpeg" },
+                { ".png",  "image/png" },
+                { ".gif",  "image/gif" },
+                { ".webp", "image/webp" },
+                { ".bmp",  "image/bmp" },
+                { ".svg",  "image/svg+xml" }
+            };
+
+            try
+            {
+                HttpFileCollection files = Request.Files;
+
+                if (files.Count == 0 || (files.Count == 1 && string.IsNullOrEmpty(files[0].FileName)))
+                {
+                    Response.Write("<script>alert('Select the media files you want to upload first.');</script>");
+                    return;
+                }
+
+                CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+                CloudBlobContainer container = blobClient.GetContainerReference("media");
+                container.CreateIfNotExists(BlobContainerPublicAccessType.Off);
+
+                List<string> uploaded = new List<string>();
+
+                for (int i = 0; i < files.Count; i++)
+                {
+                    HttpPostedFile file = files[i];
+
+                    if (string.IsNullOrEmpty(file.FileName) || file.ContentLength == 0)
+                        continue;
+
+                    string originalName = Path.GetFileName(file.FileName);
+                    string extension = Path.GetExtension(originalName).ToLowerInvariant();
+
+                    string contentType;
+                    if (!allowedTypes.TryGetValue(extension, out contentType))
+                    {
+                        Response.Write("<script>alert('" +
+                            HttpUtility.JavaScriptStringEncode(originalName) +
+                            " is not a supported media file.');</script>");
+                        return;
+                    }
+
+                    string blobName = DateTime.UtcNow.ToString("yyyyMMddHHmmss") + "_" + originalName;
+                    CloudBlockBlob blob = container.GetBlockBlobReference(blobName);
+                    blob.Properties.ContentType = contentType;
+                    blob.UploadFromStream(file.InputStream);
+                    uploaded.Add(originalName);
+                }
+
+                if (uploaded.Count > 0)
+                {
+                    string names = string.Join(", ", uploaded);
+                    Response.Write("<script>alert('Successfully uploaded: " +
+                        HttpUtility.JavaScriptStringEncode(names) + "');</script>");
+                }
+                else
+                {
+                    Response.Write("<script>alert('No valid media files were uploaded.');</script>");
+                }
+            }
+            catch (Exception ex)
+            {
+                string strError = "<br/>Media upload failed! Error message is <blockquote><pre>" +
+                    HttpUtility.HtmlEncode(ex) + "</pre></blockquote>";
+                Response.Write(strError);
+            }
+        }
+
         /// <summary>
-        /// refresh all table of the specified storageAccount 
+        /// refresh all table of the specified storageAccount
         /// </summary>
         private void RefreshAllTableName()
         {
