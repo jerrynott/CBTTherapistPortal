@@ -3,6 +3,13 @@
 <asp:Content ContentPlaceHolderID="HeadContent" runat="server">
     <script type="text/javascript">
         $(document).ready(function () {
+            $("#media_Upload").on("change", function () {
+                var list = $("#media_file_list").empty();
+                $.each(this.files, function (_, f) {
+                    list.append($("<li>").text(f.name));
+                });
+            });
+
             $("#btn_Import").click(function () {
                 var containerName = $("#txt_TableName").val();
                 var patrn = /^[a-z]([a-z0-9])*$/;
@@ -136,6 +143,7 @@
             <div class="field-group">
                 <label for="media_Upload">Select media files to upload:</label>
                 <asp:FileUpload runat="server" AllowMultiple="true" ID="media_Upload"/>
+                <ul id="media_file_list" style="margin-top: 6px; padding-left: 20px; font-size: 13px;"></ul>
             </div>
 
             <asp:Button ID="btn_Upload" runat="server" Text="Upload to Azure" OnClick="btn_Media_Upload" CssClass="btn"/>
