@@ -3,11 +3,42 @@
 <asp:Content ContentPlaceHolderID="HeadContent" runat="server">
     <script type="text/javascript">
         $(document).ready(function () {
-            $("#media_Upload").on("change", function () {
-                var list = $("#media_file_list").empty();
-                $.each(this.files, function (_, f) {
-                    list.append($("<li>").text(f.name));
+            var mediaFiles = new DataTransfer();
+
+            function formatSize(bytes) {
+                if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+                return (bytes / 1048576).toFixed(1) + " MB";
+            }
+
+            function removeFile(index) {
+                var dt = new DataTransfer();
+                $.each(mediaFiles.files, function (i, f) {
+                    if (i !== index) dt.items.add(f);
                 });
+                mediaFiles = dt;
+                document.getElementById("media_Upload").files = dt.files;
+                renderFileList();
+            }
+
+            function renderFileList() {
+                var list = $("#media_file_list").empty();
+                $.each(mediaFiles.files, function (i, f) {
+                    var li = $("<li>").text(f.name + " (" + formatSize(f.size) + ") ");
+                    $("<button>").attr("type", "button").text("Remove")
+                        .on("click", (function (idx) { return function () { removeFile(idx); }; })(i))
+                        .appendTo(li);
+                    list.append(li);
+                });
+            }
+
+            $("#media_Upload").on("change", function () {
+                var existing = {};
+                $.each(mediaFiles.files, function (_, f) { existing[f.name] = true; });
+                $.each(this.files, function (_, f) {
+                    if (!existing[f.name]) mediaFiles.items.add(f);
+                });
+                this.files = mediaFiles.files;
+                renderFileList();
             });
 
             $("#btn_Import").click(function () {
