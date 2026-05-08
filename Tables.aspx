@@ -16,7 +16,7 @@
                     if (i !== index) dt.items.add(f);
                 });
                 mediaFiles = dt;
-                document.getElementById("media_Upload").files = dt.files;
+                document.getElementById("<%= media_Upload.ClientID %>").files = dt.files;
                 renderFileList();
             }
 
@@ -31,7 +31,7 @@
                 });
             }
 
-            $("#media_Upload").on("change", function () {
+            $("#<%= media_Upload.ClientID %>").on("change", function () {
                 var existing = {};
                 $.each(mediaFiles.files, function (_, f) { existing[f.name] = true; });
                 $.each(this.files, function (_, f) {
