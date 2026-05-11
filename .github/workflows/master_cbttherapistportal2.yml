@@ -15,16 +15,14 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
-    - name: Set up .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '3.0.103'
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1
 
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
+    - name: Restore NuGet packages
+      run: nuget restore TherapistPortal.sln
 
-    - name: dotnet publish
-      run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+    - name: Build and publish with MSBuild
+      run: msbuild TherapistPortal.sln /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishUrl="${{github.workspace}}\myapp" /p:SkipInvalidConfigurations=true
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v1
@@ -32,4 +30,4 @@ jobs:
         app-name: 'cbttherapistportal2'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_a733e606b6184eb5b5700abea8a2ec1d }}
-        package: ${{env.DOTNET_ROOT}}/myapp 
+        package: ${{github.workspace}}\myapp
