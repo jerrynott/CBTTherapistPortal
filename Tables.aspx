@@ -23,9 +23,26 @@
             function renderFileList() {
                 var list = $("#media_file_list").empty();
                 $.each(mediaFiles.files, function (i, f) {
-                    var li = $("<li>").text(f.name + " (" + formatSize(f.size) + ") ");
-                    $("<button>").attr("type", "button").text("Remove")
-                        .on("click", (function (idx) { return function () { removeFile(idx); }; })(i))
+                    var li = $("<li>").css({
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "6px 10px",
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                        listStyle: "none",
+                        fontSize: "13px"
+                    }).text(f.name + " (" + formatSize(f.size) + ")");
+                    $("<button>").attr("type", "button").html("&times;").css({
+                        background: "none",
+                        border: "none",
+                        color: "#888",
+                        fontSize: "16px",
+                        cursor: "pointer",
+                        lineHeight: "1",
+                        padding: "0 2px",
+                        flexShrink: "0"
+                    }).on("click", (function (idx) { return function () { removeFile(idx); }; })(i))
                         .appendTo(li);
                     list.append(li);
                 });
@@ -174,7 +191,7 @@
             <div class="field-group">
                 <label for="media_Upload">Select media files to upload:</label>
                 <asp:FileUpload runat="server" AllowMultiple="true" ID="media_Upload"/>
-                <ul id="media_file_list" style="margin-top: 6px; padding-left: 20px; font-size: 13px;"></ul>
+                <ul id="media_file_list" style="margin-top: 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px;"></ul>
             </div>
 
             <asp:Button ID="btn_Upload" runat="server" Text="Upload to Azure" OnClick="btn_Media_Upload" CssClass="btn"/>
