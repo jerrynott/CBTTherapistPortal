@@ -19,11 +19,6 @@
 *EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED 
 *WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 \***************************************************************************/
-using Excel;
-using ICSharpCode.SharpZipLib.Zip;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Table;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -37,6 +32,11 @@ using System.Web;
 using System.Web.Services.Description;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using Excel;
+using ICSharpCode.SharpZipLib.Zip;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace TherapistPortal
 {
@@ -48,13 +48,16 @@ namespace TherapistPortal
         private static string StorageConnectionString = Environment.GetEnvironmentVariable("StorageAccount");
         private static string DevStorageConnectionString = Environment.GetEnvironmentVariable("StorageAccountDev");
 
+        /// <summary>
+        /// Stores the prod and dev storage account IDs. The current storage account in use is stored into storageAccount. The user can switch between targetting prod and dev storage accounts by clicking buttons on the page, which will trigger the change of storageAccount and refresh of table list.
+        /// </summary>
         CloudStorageAccount prodStorageAccount, devStorageAccount;
         CloudStorageAccount storageAccount;
 
         protected void Page_Load(object sender, EventArgs e)
         {
             prodStorageAccount = !string.IsNullOrEmpty(StorageConnectionString) ? CloudStorageAccount.Parse(StorageConnectionString) : null;
-            devStorageAccount  = !string.IsNullOrEmpty(DevStorageConnectionString) ? CloudStorageAccount.Parse(DevStorageConnectionString) : null;
+            devStorageAccount = !string.IsNullOrEmpty(DevStorageConnectionString) ? CloudStorageAccount.Parse(DevStorageConnectionString) : null;
             ChangeTargetDatabase(CurrentDbMode);
             UpdateDbModeButtons();
             string userID = null;
@@ -185,6 +188,11 @@ namespace TherapistPortal
             RefreshAllTableName();
         }
 
+        /// <summary>
+        /// Uploads selected media files to blob storage of prod storage account. The supported media types are mp4, mov, avi, mkv, webm, wmv, m4v for video files; mp3, wav, aac, ogg, m4a, flac for audio files; jpg, jpeg, png, gif, webp, bmp, svg for image files.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void btn_Media_Upload(object sender, EventArgs e)
         {
             var allowedTypes = new Dictionary<string, string>
@@ -225,6 +233,7 @@ namespace TherapistPortal
                 CloudBlobContainer container = blobClient.GetContainerReference("media");
                 container.CreateIfNotExists(BlobContainerPublicAccessType.Off);
 
+                /// Instead of uploading single file, allows for uploading of multiple files at once. Also displays the currently uploaded files before the upload process.
                 List<string> uploaded = new List<string>();
 
                 for (int i = 0; i < files.Count; i++)
@@ -708,19 +717,30 @@ namespace TherapistPortal
             }
         }
 
+        /// <summary>
+        /// Gets the current database mode (prod or dev) that user is targeting. The default mode is dev.
+        /// </summary>
         public string CurrentDbMode => (ViewState["DbTarget"] as string) ?? "dev";
 
+        /// <summary>
+        /// Updates the visibility, enabled status and CSS class of prod/dev mode buttons based on the current database mode. This provides visual feedback to users about which database they are currently targeting and prevents them from clicking the button of the mode they are already in.
+        /// </summary>
         private void UpdateDbModeButtons()
         {
             bool isDev = CurrentDbMode == "dev";
-            btn_Dev.Visible   = devStorageAccount != null;
-            btn_Dev.CssClass  = "btn btn-mode" + (isDev  ? " btn-mode-active" : "");
+            btn_Dev.Visible = devStorageAccount != null;
+            btn_Dev.CssClass = "btn btn-mode" + (isDev ? " btn-mode-active" : "");
             btn_Prod.CssClass = "btn btn-mode" + (!isDev ? " btn-mode-active" : "");
             btn_Dev.Enabled = !isDev;
             btn_Prod.Enabled = isDev;
             hf_DbMode.Value = CurrentDbMode;
         }
 
+        /// <summary>
+        /// Handles the click event of the Dev button. When clicked, it sets the target database to dev, clears the selected table name in view state, changes the storage account to dev storage account, updates the button states, and refreshes the table list.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void btn_Dev_Click(object sender, EventArgs e)
         {
             ViewState["DbTarget"] = "dev";
@@ -730,6 +750,11 @@ namespace TherapistPortal
             GetAllTableName();
         }
 
+        /// <summary>
+        /// Handles the click event of the Prod button. When clicked, it sets the target database to prod, clears the selected table name in view state, changes the storage account to prod storage account, updates the button states, and refreshes the table list.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected void btn_Prod_Click(object sender, EventArgs e)
         {
             ViewState["DbTarget"] = "prod";
@@ -739,6 +764,10 @@ namespace TherapistPortal
             GetAllTableName();
         }
 
+        /// <summary>
+        /// Changes the storage account that the page is targeting based on the input target ("dev" or "prod"). This method is called when user clicks the prod or dev button to switch between prod and dev storage accounts.
+        /// </summary>
+        /// <param name="target"></param>
         private void ChangeTargetDatabase(string target)
         {
             switch (target)
