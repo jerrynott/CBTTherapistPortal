@@ -176,8 +176,7 @@
 
                             <div class="field-group">
                                 <label for="txt_TableName">Table name:</label>
-                                <asp:TextBox ID="txt_TableName" ReadOnly="true" runat="server" CssClass="readonly">
-                                    content</asp:TextBox>
+                                <asp:TextBox ID="txt_TableName" ReadOnly="true" runat="server" CssClass="readonly">content</asp:TextBox>
                                 <span id="lbl_NameError" class="error-label">Table name is invalid, please check
                                     it.</span>
                             </div>
