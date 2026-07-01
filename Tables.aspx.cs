@@ -216,7 +216,11 @@ namespace TherapistPortal
                 { ".gif",  "image/gif" },
                 { ".webp", "image/webp" },
                 { ".bmp",  "image/bmp" },
-                { ".svg",  "image/svg+xml" }
+                { ".svg",  "image/svg+xml" },
+                { ".vtt", "text/vtt" },
+                { ".srt", "application/x-subrip" },
+                { ".ttml", "application/ttml+xml" },
+                { ".dfxp", "application/ttml+xml" }
             };
 
             try
